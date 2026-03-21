@@ -240,7 +240,7 @@
 
   <!-- Navbar -->
   <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
 
       <!-- Logo + nav -->
       <div class="flex items-center gap-6">
@@ -490,7 +490,7 @@
   </header>
 
   <!-- Page content -->
-  <main class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <main class="mx-auto w-full max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
     <slot />
   </main>
 </div>

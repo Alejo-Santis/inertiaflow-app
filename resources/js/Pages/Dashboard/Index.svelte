@@ -113,98 +113,182 @@
     </div>
   </div>
 
-  <!-- Recent projects -->
-  <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-      <div>
-        <h2 class="font-semibold text-slate-900">Proyectos recientes</h2>
-        <p class="mt-0.5 text-xs text-slate-500">Tus últimos {projects?.data?.length ?? 0} proyectos</p>
-      </div>
-      <Link
-        href={route('projects.index')}
-        class="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-      >
-        Ver todos
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-        </svg>
-      </Link>
-    </div>
+  <!-- Bottom section: 2-column grid on large screens -->
+  <div class="grid gap-6 lg:grid-cols-3">
 
-    {#if projects?.data?.length}
-      <div class="divide-y divide-slate-100">
-        {#each projects.data as project}
-          {@const status = getStatus(project.status)}
-          <div class="group flex items-center gap-4 px-6 py-4 transition hover:bg-slate-50/60">
-            <!-- Color dot -->
-            <div
-              class="h-10 w-10 shrink-0 rounded-xl shadow-sm"
-              style="background-color: {project.color ?? '#6366f1'};"
-            ></div>
-
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <p class="truncate font-medium text-slate-900">{project.name}</p>
-                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium {status.color}">
-                  <span class="h-1.5 w-1.5 rounded-full {status.dot}"></span>
-                  {status.label}
-                </span>
-              </div>
-              {#if (project.tasks_count ?? 0) > 0}
-                {@const pct = Math.round(((project.done_tasks_count ?? 0) / project.tasks_count) * 100)}
-                <div class="mt-1.5 flex items-center gap-2">
-                  <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      class="h-full rounded-full {pct === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}"
-                      style="width: {pct}%;"
-                    ></div>
-                  </div>
-                  <span class="shrink-0 text-xs text-slate-400">{pct}%</span>
-                </div>
-              {:else}
-                <p class="mt-0.5 text-xs text-slate-400">Sin tareas</p>
-              {/if}
-            </div>
-
-            <div class="shrink-0 text-right">
-              <p class="text-sm font-semibold text-slate-700">{project.tasks_count ?? 0}</p>
-              <p class="text-xs text-slate-400">tareas</p>
-            </div>
-
-            <Link
-              href={route('projects.show', project.uuid)}
-              class="shrink-0 rounded-lg p-2 text-slate-400 opacity-0 transition hover:bg-indigo-50 hover:text-indigo-600 group-hover:opacity-100"
-              title="Abrir proyecto"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-              </svg>
-            </Link>
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-          <svg class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-          </svg>
-        </div>
+    <!-- Recent projects (2/3 width) -->
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
         <div>
-          <p class="font-semibold text-slate-700">Sin proyectos aún</p>
-          <p class="mt-1 text-sm text-slate-500">Crea tu primer proyecto para comenzar</p>
+          <h2 class="font-semibold text-slate-900">Proyectos recientes</h2>
+          <p class="mt-0.5 text-xs text-slate-500">Tus últimos {projects?.data?.length ?? 0} proyectos</p>
         </div>
         <Link
-          href={route('projects.create')}
-          class="mt-1 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          href={route('projects.index')}
+          class="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
         >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          Ver todos
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
           </svg>
-          Crear proyecto
         </Link>
       </div>
-    {/if}
+
+      {#if projects?.data?.length}
+        <div class="divide-y divide-slate-100">
+          {#each projects.data as project}
+            {@const status = getStatus(project.status)}
+            <div class="group flex items-center gap-4 px-6 py-4 transition hover:bg-slate-50/60">
+              <div
+                class="h-10 w-10 shrink-0 rounded-xl shadow-sm"
+                style="background-color: {project.color ?? '#6366f1'};"
+              ></div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="truncate font-medium text-slate-900">{project.name}</p>
+                  <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium {status.color}">
+                    <span class="h-1.5 w-1.5 rounded-full {status.dot}"></span>
+                    {status.label}
+                  </span>
+                </div>
+                {#if (project.tasks_count ?? 0) > 0}
+                  {@const pct = Math.round(((project.done_tasks_count ?? 0) / project.tasks_count) * 100)}
+                  <div class="mt-1.5 flex items-center gap-2">
+                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        class="h-full rounded-full {pct === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}"
+                        style="width: {pct}%;"
+                      ></div>
+                    </div>
+                    <span class="shrink-0 text-xs text-slate-400">{pct}%</span>
+                  </div>
+                {:else}
+                  <p class="mt-0.5 text-xs text-slate-400">Sin tareas</p>
+                {/if}
+              </div>
+
+              <div class="shrink-0 text-right">
+                <p class="text-sm font-semibold text-slate-700">{project.tasks_count ?? 0}</p>
+                <p class="text-xs text-slate-400">tareas</p>
+              </div>
+
+              <Link
+                href={route('projects.show', project.uuid)}
+                class="shrink-0 rounded-lg p-2 text-slate-400 opacity-0 transition hover:bg-indigo-50 hover:text-indigo-600 group-hover:opacity-100"
+                title="Abrir proyecto"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </Link>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+            <svg class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700">Sin proyectos aún</p>
+            <p class="mt-1 text-sm text-slate-500">Crea tu primer proyecto para comenzar</p>
+          </div>
+          <Link
+            href={route('projects.create')}
+            class="mt-1 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Crear proyecto
+          </Link>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Sidebar (1/3 width) -->
+    <div class="flex flex-col gap-6">
+
+      <!-- Estado de proyectos -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="mb-4 font-semibold text-slate-900">Estado de proyectos</h3>
+        <div class="space-y-3">
+          {#each [
+            { key: 'active',    label: 'Activos',     color: 'bg-emerald-500', bg: 'bg-emerald-50' },
+            { key: 'on_hold',   label: 'En espera',   color: 'bg-amber-500',   bg: 'bg-amber-50'   },
+            { key: 'completed', label: 'Completados', color: 'bg-sky-500',     bg: 'bg-sky-50'     },
+            { key: 'cancelled', label: 'Cancelados',  color: 'bg-slate-400',   bg: 'bg-slate-100'  },
+          ] as s}
+            {@const count = projects?.data?.filter((p: any) => p.status === s.key).length ?? 0}
+            {@const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0}
+            <div>
+              <div class="mb-1 flex items-center justify-between text-sm">
+                <span class="text-slate-600">{s.label}</span>
+                <span class="font-semibold text-slate-800">{count}</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full {s.bg}">
+                <div class="h-full rounded-full {s.color} transition-all duration-500" style="width: {pct}%;"></div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Accesos rápidos -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="mb-4 font-semibold text-slate-900">Accesos rápidos</h3>
+        <div class="space-y-2">
+          <Link
+            href={route('projects.create')}
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </span>
+            Nuevo proyecto
+          </Link>
+          <Link
+            href={route('my-tasks')}
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-violet-50 hover:text-violet-700"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </span>
+            Mis tareas
+          </Link>
+          <Link
+            href={route('meetings.index')}
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+              </svg>
+            </span>
+            Reuniones
+          </Link>
+          <Link
+            href={route('analytics')}
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+              </svg>
+            </span>
+            Analíticas
+          </Link>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </Layout>
