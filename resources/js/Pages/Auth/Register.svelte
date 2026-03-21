@@ -1,0 +1,220 @@
+<script lang="ts">
+  import { Link, useForm } from '@inertiajs/svelte';
+  import route from 'ziggy-js';
+
+  const form = useForm({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+  });
+
+  const submit = async (event: Event) => {
+    event.preventDefault();
+    await $form.post(route('register'), {
+      onSuccess: () => $form.reset('password', 'password_confirmation'),
+    });
+  };
+</script>
+
+<svelte:head>
+  <title>Crear cuenta — InertiaFlow</title>
+</svelte:head>
+
+<div class="flex min-h-screen bg-slate-50 font-sans">
+
+  <!-- Left panel (branding) -->
+  <div class="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-violet-600 via-indigo-700 to-indigo-800 lg:flex lg:flex-col lg:justify-between p-12">
+    <div class="absolute inset-0 opacity-10"
+      style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 32px 32px;">
+    </div>
+
+    <div class="relative flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+        </svg>
+      </div>
+      <span class="text-xl font-bold text-white">InertiaFlow</span>
+    </div>
+
+    <div class="relative">
+      <h2 class="text-4xl font-bold leading-tight text-white">
+        Empieza a organizar<br />tu trabajo hoy.
+      </h2>
+      <p class="mt-4 text-lg text-indigo-200">
+        Crea tu cuenta gratis y comienza a gestionar proyectos en minutos.
+      </p>
+
+      <div class="mt-10 space-y-3">
+        {#each [
+          { icon: '✓', text: 'Sin tarjeta de crédito requerida' },
+          { icon: '✓', text: 'Proyectos y tareas ilimitadas' },
+          { icon: '✓', text: 'Soporte incluido' },
+        ] as item}
+          <div class="flex items-center gap-3">
+            <div class="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs text-white font-bold">{item.icon}</div>
+            <span class="text-sm text-indigo-100">{item.text}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <div class="relative text-sm text-indigo-300">
+      © {new Date().getFullYear()} InertiaFlow. Todos los derechos reservados.
+    </div>
+  </div>
+
+  <!-- Right panel (form) -->
+  <div class="flex flex-1 flex-col items-center justify-center px-6 py-12">
+    <div class="w-full max-w-md">
+
+      <!-- Mobile logo -->
+      <div class="mb-8 flex items-center gap-2 lg:hidden">
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
+          <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-slate-900">InertiaFlow</span>
+      </div>
+
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Crea tu cuenta</h1>
+        <p class="mt-1.5 text-sm text-slate-500">Completa el formulario para comenzar gratis</p>
+      </div>
+
+      <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="mt-8 space-y-4">
+
+        <!-- Name -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-slate-700">Nombre completo</label>
+          <div class="relative mt-1.5">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </div>
+            <input
+              id="name"
+              type="text"
+              autocomplete="name"
+              placeholder="Juan García"
+              bind:value={$form.name}
+              class="block w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition
+                {$form.errors.name ? 'border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-indigo-500'}
+                focus:outline-none focus:ring-2 focus:ring-offset-0"
+              required
+            />
+          </div>
+          {#if $form.errors.name}
+            <p class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+              <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+              {$form.errors.name}
+            </p>
+          {/if}
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-700">Correo electrónico</label>
+          <div class="relative mt-1.5">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+            </div>
+            <input
+              id="email"
+              type="email"
+              autocomplete="email"
+              placeholder="tu@empresa.com"
+              bind:value={$form.email}
+              class="block w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition
+                {$form.errors.email ? 'border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-indigo-500'}
+                focus:outline-none focus:ring-2 focus:ring-offset-0"
+              required
+            />
+          </div>
+          {#if $form.errors.email}
+            <p class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+              <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+              {$form.errors.email}
+            </p>
+          {/if}
+        </div>
+
+        <!-- Password grid -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="password" class="block text-sm font-medium text-slate-700">Contraseña</label>
+            <input
+              id="password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Mín. 8 caracteres"
+              bind:value={$form.password}
+              class="mt-1.5 block w-full rounded-xl border py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition
+                {$form.errors.password ? 'border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-indigo-500'}
+                focus:outline-none focus:ring-2 focus:ring-offset-0"
+              required
+            />
+            {#if $form.errors.password}
+              <p class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                <svg class="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+                {$form.errors.password}
+              </p>
+            {/if}
+          </div>
+          <div>
+            <label for="password_confirmation" class="block text-sm font-medium text-slate-700">Confirmar</label>
+            <input
+              id="password_confirmation"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Repite la contraseña"
+              bind:value={$form.password_confirmation}
+              class="mt-1.5 block w-full rounded-xl border py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition
+                {$form.errors.password_confirmation ? 'border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-indigo-500'}
+                focus:outline-none focus:ring-2 focus:ring-offset-0"
+              required
+            />
+            {#if $form.errors.password_confirmation}
+              <p class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                <svg class="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+                {$form.errors.password_confirmation}
+              </p>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          disabled={$form.processing}
+          class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-60"
+        >
+          {#if $form.processing}
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Creando cuenta...
+          {:else}
+            Crear cuenta gratis
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
+          {/if}
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-slate-500">
+        ¿Ya tienes cuenta?
+        <Link href={route('login')} class="font-semibold text-indigo-600 hover:text-indigo-700">
+          Iniciar sesión
+        </Link>
+      </p>
+    </div>
+  </div>
+</div>

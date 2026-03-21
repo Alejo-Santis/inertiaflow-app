@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"$form\\\\.\" /var/www/inertiaflow-app/resources/js/Pages/Auth/Login.svelte)",
+      "Bash(php artisan:*)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**p.get\\(''''dependencies'''',{}\\), **p.get\\(''''devDependencies'''',{}\\)}.items\\(\\)]\")",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in p.get\\(''''require'''',{}\\).items\\(\\)]\")"
+    ]
+  }
+}
