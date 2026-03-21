@@ -84,7 +84,7 @@
         <p class="mt-1.5 text-sm text-slate-500">Completa el formulario para comenzar gratis</p>
       </div>
 
-      <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="mt-8 space-y-4">
+      <form onsubmit={(e) => { e.preventDefault(); submit(e); }} class="mt-8 space-y-4">
 
         <!-- Name -->
         <div>

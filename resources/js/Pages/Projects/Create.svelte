@@ -48,7 +48,7 @@
       <p class="mt-1 text-sm text-slate-500">Completa la información para crear tu nuevo proyecto</p>
     </div>
 
-    <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-6">
+    <form onsubmit={(e) => { e.preventDefault(); submit(e); }} class="space-y-6">
 
       <!-- Basic info card -->
       <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
