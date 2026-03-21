@@ -14,6 +14,7 @@
     status:          task.status,
     due_date:        task.due_date ?? '',
     estimated_hours: task.estimated_hours ?? null,
+    meeting_url:     task.meeting_url ?? '',
     assignees:       (task.assignees ?? []).map((a: any) => a.id) as number[],
   });
 
@@ -227,6 +228,26 @@
                 <span class="text-xs text-slate-400">horas</span>
               </div>
             </div>
+          </div>
+          <div class="sm:col-span-2">
+            <label for="meeting_url" class="block text-sm font-medium text-slate-700">Enlace de reunión</label>
+            <div class="relative mt-1.5">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                </svg>
+              </div>
+              <input
+                id="meeting_url"
+                type="url"
+                placeholder="https://meet.google.com/..."
+                bind:value={$form.meeting_url}
+                class="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+              />
+            </div>
+            {#if $form.errors.meeting_url}
+              <p class="mt-1 text-xs text-rose-600">{$form.errors.meeting_url}</p>
+            {/if}
           </div>
         </div>
       </div>

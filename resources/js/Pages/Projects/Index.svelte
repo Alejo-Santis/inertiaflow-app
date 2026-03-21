@@ -15,6 +15,21 @@
   function getStatus(status: string) {
     return statusConfig[status] ?? { label: status, color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' };
   }
+
+  const priorityConfig: Record<string, { label: string; color: string; icon: string }> = {
+    low:    { label: 'Baja',  color: 'text-slate-500', icon: '▼' },
+    medium: { label: 'Media', color: 'text-amber-600', icon: '●' },
+    high:   { label: 'Alta',  color: 'text-rose-600',  icon: '▲' },
+  };
+
+  function getPriority(p: string) {
+    return priorityConfig[p] ?? { label: p, color: 'text-slate-500', icon: '●' };
+  }
+
+  function isOverdue(deadline: string | null) {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date(new Date().toDateString());
+  }
 </script>
 
 <Layout title="Proyectos">
@@ -43,6 +58,7 @@
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {#each projects.data as project}
         {@const status = getStatus(project.status)}
+        {@const pri = getPriority(project.priority ?? 'medium')}
         <article class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
 
           <!-- Color bar -->
@@ -92,12 +108,27 @@
                 </div>
               {/if}
 
+              <!-- Priority + Deadline row -->
+              <div class="mb-3 flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1 text-xs font-medium {pri.color}">
+                  <span>{pri.icon}</span>{pri.label}
+                </span>
+                {#if project.deadline}
+                  <span class="ml-auto inline-flex items-center gap-1 text-xs {isOverdue(project.deadline) ? 'text-rose-600 font-semibold' : 'text-slate-500'}">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                    </svg>
+                    {isOverdue(project.deadline) ? '¡Vencido!' : 'Límite:'} {project.deadline}
+                  </span>
+                {/if}
+              </div>
+
               {#if project.end_date}
                 <div class="mb-2 flex items-center gap-1.5 text-xs text-slate-500">
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                   </svg>
-                  Vence: {project.end_date}
+                  Ejecución: {project.start_date ?? '—'} → {project.end_date}
                 </div>
               {/if}
 

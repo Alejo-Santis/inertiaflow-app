@@ -5,10 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Task extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'status', 'priority', 'due_date', 'estimated_hours'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('task');
+    }
 
     protected $fillable = [
         'project_id',
@@ -19,6 +30,7 @@ class Task extends Model
         'status',
         'due_date',
         'estimated_hours',
+        'meeting_url',
     ];
 
     public function project()
@@ -44,6 +56,11 @@ class Task extends Model
     public function timeLogs()
     {
         return $this->hasMany(TimeLog::class);
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(TaskAttachment::class);
     }
 
     protected static function booted()

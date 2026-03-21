@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Task;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -73,7 +74,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn() => $request->session()->get('success'),
                 'error'   => fn() => $request->session()->get('error'),
             ],
-            'notifications' => fn() => $this->recentActivity($request),
+            'notifications'       => fn() => $this->recentActivity($request),
+            'unread_notif_count'  => fn() => $request->user()
+                ? UserNotification::where('user_id', $request->user()->id)->whereNull('read_at')->count()
+                : 0,
         ];
     }
 }

@@ -68,6 +68,8 @@ class ProjectController extends Controller
             'end_date'    => 'nullable|date|after_or_equal:start_date',
             'status'      => 'required|string|in:active,on_hold,completed,cancelled',
             'color'       => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'priority'    => 'required|string|in:low,medium,high',
+            'deadline'    => 'nullable|date',
         ]);
 
         $data['owner_id'] = $request->user()->id;
@@ -97,6 +99,8 @@ class ProjectController extends Controller
             'end_date'    => 'nullable|date|after_or_equal:start_date',
             'status'      => 'required|string|in:active,on_hold,completed,cancelled',
             'color'       => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'priority'    => 'required|string|in:low,medium,high',
+            'deadline'    => 'nullable|date',
         ]);
 
         $project->update($data);

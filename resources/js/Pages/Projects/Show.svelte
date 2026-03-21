@@ -15,6 +15,15 @@
   };
 
   $: status = statusConfig[project.status] ?? { label: project.status, color: 'bg-slate-100', dot: 'bg-slate-400' };
+
+  const priorityConfig: Record<string, { label: string; color: string; icon: string }> = {
+    low:    { label: 'Prioridad baja',  color: 'text-slate-500', icon: '▼' },
+    medium: { label: 'Prioridad media', color: 'text-amber-600', icon: '●' },
+    high:   { label: 'Prioridad alta',  color: 'text-rose-600',  icon: '▲' },
+  };
+  $: priority = priorityConfig[project.priority ?? 'medium'];
+  $: deadlineOverdue = project.deadline && new Date(project.deadline) < new Date(new Date().toDateString());
+
   $: progress = project.tasks_count > 0
     ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
     : 0;
@@ -70,10 +79,25 @@
                 <p class="mt-0.5 text-sm text-slate-500">Por {project.owner?.name ?? 'Desconocido'}</p>
               </div>
             </div>
-            <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {status.color}">
-              <span class="h-1.5 w-1.5 rounded-full {status.dot}"></span>
-              {status.label}
-            </span>
+            <div class="flex shrink-0 items-center gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {status.color}">
+                <span class="h-1.5 w-1.5 rounded-full {status.dot}"></span>
+                {status.label}
+              </span>
+              {#if priority}
+                <span class="inline-flex items-center gap-1 text-xs font-medium {priority.color}">
+                  {priority.icon} {priority.label}
+                </span>
+              {/if}
+              {#if project.deadline}
+                <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium {deadlineOverdue ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200' : 'bg-slate-50 text-slate-600 ring-1 ring-slate-200'}">
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                  </svg>
+                  {deadlineOverdue ? '¡Vencido!' : 'Límite:'} {project.deadline}
+                </span>
+              {/if}
+            </div>
           </div>
 
           {#if project.description}

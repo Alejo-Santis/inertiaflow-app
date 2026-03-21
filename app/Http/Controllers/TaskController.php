@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TaskAssigned;
 use App\Models\Project;
 use App\Models\Task;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -45,17 +48,24 @@ class TaskController extends Controller
     {
         Gate::authorize('view', $project);
 
-        $task->load(['creator', 'assignees', 'comments.user', 'timeLogs.user']);
+        $task->load(['creator', 'assignees', 'comments.user', 'timeLogs.user', 'attachments.user']);
 
         $members = $project->users()->get(['users.id', 'users.name', 'users.uuid']);
 
         $loggedHours = $task->timeLogs->sum('hours');
+
+        // Append public URL and formatted size to each attachment
+        $attachments = $task->attachments->map(fn($a) => array_merge($a->toArray(), [
+            'url'            => $a->url,
+            'formatted_size' => $a->formatted_size,
+        ]));
 
         return Inertia::render('Tasks/Show', [
             'project'      => $project,
             'task'         => $task,
             'members'      => $members,
             'logged_hours' => $loggedHours,
+            'attachments'  => $attachments,
         ]);
     }
 
@@ -97,6 +107,7 @@ class TaskController extends Controller
             'due_date'        => 'nullable|date|after_or_equal:today',
             'status'          => 'required|string|in:todo,in_progress,in_review,done,cancelled',
             'estimated_hours' => 'nullable|numeric|min:0',
+            'meeting_url'     => 'nullable|url',
             'assignees'       => 'nullable|array',
             'assignees.*'     => 'integer|exists:users,id',
         ]);
@@ -105,9 +116,11 @@ class TaskController extends Controller
         $validated['created_by'] = $request->user()->id;
 
         $task = Task::create($validated);
+        $task->load('project');
 
         if (! empty($validated['assignees'])) {
             $task->assignees()->sync($validated['assignees']);
+            $this->notifyAssignees($task, $validated['assignees'], $request->user());
         }
 
         return Redirect::route('projects.tasks.index', $project->uuid)
@@ -139,12 +152,22 @@ class TaskController extends Controller
             'due_date'        => 'nullable|date',
             'status'          => 'required|string|in:todo,in_progress,in_review,done,cancelled',
             'estimated_hours' => 'nullable|numeric|min:0',
+            'meeting_url'     => 'nullable|url',
             'assignees'       => 'nullable|array',
             'assignees.*'     => 'integer|exists:users,id',
         ]);
 
+        $previousAssigneeIds = $task->assignees()->pluck('users.id')->toArray();
         $task->update($validated);
-        $task->assignees()->sync($validated['assignees'] ?? []);
+        $task->load('project');
+        $newAssigneeIds = $validated['assignees'] ?? [];
+        $task->assignees()->sync($newAssigneeIds);
+
+        // Notify only newly added assignees
+        $addedIds = array_diff($newAssigneeIds, $previousAssigneeIds);
+        if (!empty($addedIds)) {
+            $this->notifyAssignees($task, $addedIds, $request->user());
+        }
 
         return Redirect::route('projects.tasks.show', [$project->uuid, $task->uuid])
             ->with('success', 'Tarea actualizada.');
@@ -171,5 +194,64 @@ class TaskController extends Controller
         $task->update($validated);
 
         return back()->with('success', 'Estado actualizado.');
+    }
+
+    private function notifyAssignees(Task $task, array $assigneeIds, $assignedBy): void
+    {
+        $assignees = \App\Models\User::whereIn('id', $assigneeIds)
+            ->where('id', '!=', $assignedBy->id)
+            ->get();
+
+        foreach ($assignees as $assignee) {
+            // DB notification
+            NotificationService::send(
+                $assignee->id,
+                'task_assigned',
+                "{$assignedBy->name} te asignó: \"{$task->title}\"",
+                "Proyecto: {$task->project->name}",
+                route('projects.tasks.show', [$task->project->uuid, $task->uuid])
+            );
+            // Email (queued)
+            Mail::to($assignee->email)->queue(new TaskAssigned($task, $assignee, $assignedBy));
+        }
+    }
+
+    public function export(Project $project)
+    {
+        Gate::authorize('view', $project);
+
+        $tasks = $project->tasks()
+            ->with(['creator:id,name', 'assignees:id,name'])
+            ->orderBy('status')
+            ->orderBy('priority')
+            ->get();
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . str()->slug($project->name) . '-tareas.csv"',
+        ];
+
+        $callback = function () use ($tasks, $project) {
+            $out = fopen('php://output', 'w');
+            // BOM for Excel UTF-8
+            fputs($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['ID', 'Título', 'Estado', 'Prioridad', 'Asignados', 'Creado por', 'Fecha vencimiento', 'Horas estimadas', 'Creado el']);
+            foreach ($tasks as $task) {
+                fputcsv($out, [
+                    $task->uuid,
+                    $task->title,
+                    $task->status,
+                    $task->priority,
+                    $task->assignees->pluck('name')->join(', '),
+                    $task->creator?->name ?? '—',
+                    $task->due_date ?? '—',
+                    $task->estimated_hours ?? '—',
+                    $task->created_at->format('d/m/Y'),
+                ]);
+            }
+            fclose($out);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

@@ -7,6 +7,7 @@
   export let task: any;
   export let members: any[] = [];
   export let logged_hours: number = 0;
+  export let attachments: any[] = [];
 
   const page = usePage();
   $: auth = $page.props.auth as any;
@@ -70,10 +71,42 @@
     });
   }
 
+  // Attachment upload
+  const attachForm = useForm({ file: null as File | null });
+  function uploadAttachment(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    $attachForm.file = input.files[0];
+    $attachForm.post(route('projects.tasks.attachments.store', [project.uuid, task.uuid]), {
+      preserveScroll: true,
+      onSuccess: () => { $attachForm.reset(); input.value = ''; },
+      forceFormData: true,
+    });
+  }
+  function deleteAttachment(id: number) {
+    router.delete(route('projects.tasks.attachments.destroy', [project.uuid, task.uuid, id]), { preserveScroll: true });
+  }
+
+  function fileIcon(mime: string | null): string {
+    if (!mime) return '📎';
+    if (mime.startsWith('image/')) return '🖼';
+    if (mime === 'application/pdf') return '📄';
+    if (mime.includes('word') || mime.includes('document')) return '📝';
+    if (mime.includes('sheet') || mime.includes('excel')) return '📊';
+    if (mime.includes('zip') || mime.includes('rar')) return '📦';
+    return '📎';
+  }
+
+  // @mention highlight
+  function highlightMentions(text: string): string {
+    return text.replace(/@([\w.\-]+)/g, '<span class="font-semibold text-indigo-600">@$1</span>');
+  }
+
   // Comment form
   const commentForm = useForm({ body: '' });
   function submitComment() {
     if (!$commentForm.body.trim()) return;
+    mentionActive = false;
     $commentForm.post(route('projects.tasks.comments.store', [project.uuid, task.uuid]), {
       preserveScroll: true,
       onSuccess: () => $commentForm.reset(),
@@ -84,6 +117,56 @@
     router.delete(route('projects.tasks.comments.destroy', [project.uuid, task.uuid, commentId]), {
       preserveScroll: true,
     });
+  }
+
+  // @mention autocomplete
+  let mentionActive  = false;
+  let mentionQuery   = '';
+  let mentionStart   = 0;
+  let mentionIndex   = 0;
+  let commentTextarea: HTMLTextAreaElement;
+  $: mentionSuggestions = mentionQuery === ''
+    ? members.slice(0, 6)
+    : members.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
+
+  function onCommentInput(e: Event) {
+    const ta    = e.target as HTMLTextAreaElement;
+    const pos   = ta.selectionStart ?? 0;
+    const before = ta.value.slice(0, pos);
+    const match  = before.match(/@(\w*)$/);
+    if (match) {
+      mentionQuery  = match[1];
+      mentionStart  = pos - match[0].length;
+      mentionActive = true;
+      mentionIndex  = 0;
+    } else {
+      mentionActive = false;
+    }
+  }
+
+  function onCommentKeydown(e: KeyboardEvent) {
+    if (!mentionActive) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex = Math.min(mentionIndex + 1, mentionSuggestions.length - 1); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); mentionIndex = Math.max(mentionIndex - 1, 0); }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      if (mentionSuggestions[mentionIndex]) { e.preventDefault(); insertMention(mentionSuggestions[mentionIndex]); }
+    }
+    if (e.key === 'Escape') { mentionActive = false; }
+  }
+
+  function insertMention(member: any) {
+    const ta     = commentTextarea;
+    const pos    = ta.selectionStart ?? 0;
+    const value  = $commentForm.body;
+    const slug   = member.name.replace(/\s+/g, '');
+    const insert = '@' + slug + ' ';
+    $commentForm.body = value.slice(0, mentionStart) + insert + value.slice(pos);
+    mentionActive = false;
+    setTimeout(() => {
+      ta.focus();
+      const cur = mentionStart + insert.length;
+      ta.setSelectionRange(cur, cur);
+    }, 0);
   }
 
   // Avatar helpers
@@ -229,7 +312,7 @@
                       {new Date(comment.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
-                  <p class="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{comment.body}</p>
+                  <p class="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{@html highlightMentions(comment.body)}</p>
                 </div>
                 {#if auth?.user?.id === comment.user_id || auth?.isAdmin}
                   <button
@@ -257,10 +340,33 @@
               {getInitials(auth.user.name)}
             </div>
           {/if}
-          <div class="flex-1">
+          <div class="relative flex-1">
+            <!-- @mention dropdown -->
+            {#if mentionActive && mentionSuggestions.length > 0}
+              <div class="absolute bottom-full left-0 z-40 mb-1 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                <p class="border-b border-slate-100 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mencionar</p>
+                {#each mentionSuggestions as member, i}
+                  <button
+                    type="button"
+                    onclick={() => insertMention(member)}
+                    class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition {mentionIndex === i ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'}"
+                  >
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span class="truncate font-medium">{member.name}</span>
+                    <span class="ml-auto text-[10px] text-slate-400">@{member.name.replace(/\s+/g, '')}</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
             <textarea
+              bind:this={commentTextarea}
               bind:value={$commentForm.body}
-              placeholder="Escribe un comentario..."
+              oninput={onCommentInput}
+              onkeydown={onCommentKeydown}
+              placeholder="Escribe un comentario... usa @ para mencionar"
               rows="2"
               class="block w-full resize-none rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0
                 {$commentForm.errors?.body ? 'border-rose-300 bg-rose-50' : ''}"
@@ -400,6 +506,51 @@
         </form>
       </div>
 
+      <!-- Attachments card -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="mb-3 text-sm font-semibold text-slate-700">
+          Adjuntos
+          {#if attachments.length > 0}
+            <span class="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{attachments.length}</span>
+          {/if}
+        </h3>
+
+        {#if attachments.length > 0}
+          <div class="mb-3 space-y-1.5">
+            {#each attachments as att}
+              <div class="group flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                <span class="text-base">{fileIcon(att.mime_type)}</span>
+                <div class="min-w-0 flex-1">
+                  <a href={att.url} target="_blank" rel="noopener" class="block truncate text-xs font-medium text-indigo-700 hover:underline">{att.original_name}</a>
+                  <p class="text-[10px] text-slate-400">{att.formatted_size} · {att.user?.name ?? '—'}</p>
+                </div>
+                <button
+                  onclick={() => deleteAttachment(att.id)}
+                  class="hidden shrink-0 rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 group-hover:block"
+                  title="Eliminar"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Upload -->
+        <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 px-4 py-3 text-sm text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+          </svg>
+          {$attachForm.processing ? 'Subiendo...' : 'Adjuntar archivo'}
+          <input type="file" class="sr-only" onchange={uploadAttachment} disabled={$attachForm.processing} />
+        </label>
+        {#if $attachForm.errors.file}
+          <p class="mt-1 text-xs text-rose-600">{$attachForm.errors.file}</p>
+        {/if}
+      </div>
+
       <!-- Assignees card -->
       <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 class="mb-3 text-sm font-semibold text-slate-700">Asignados</h3>
@@ -435,6 +586,24 @@
           <span class="text-sm font-medium text-slate-700 truncate">{project.name}</span>
         </Link>
       </div>
+
+      <!-- Meeting link -->
+      {#if task.meeting_url}
+        <div class="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 shadow-sm">
+          <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-indigo-500">Reunión vinculada</p>
+          <a
+            href={task.meeting_url}
+            target="_blank"
+            rel="noopener"
+            class="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+          >
+            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            Unirse a la reunión
+          </a>
+        </div>
+      {/if}
 
       <!-- Quick links -->
       <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

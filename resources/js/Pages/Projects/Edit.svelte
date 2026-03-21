@@ -12,6 +12,8 @@
     end_date:    project.end_date    ?? '',
     status:      project.status,
     color:       project.color ?? '#6366f1',
+    priority:    project.priority ?? 'medium',
+    deadline:    project.deadline ?? '',
   });
 
   const statusOptions = [
@@ -19,6 +21,12 @@
     { value: 'on_hold',   label: 'En espera' },
     { value: 'completed', label: 'Completado' },
     { value: 'cancelled', label: 'Cancelado' },
+  ];
+
+  const priorityOptions = [
+    { value: 'low',    label: 'Baja' },
+    { value: 'medium', label: 'Media' },
+    { value: 'high',   label: 'Alta' },
   ];
 
   const colorPresets = [
@@ -149,7 +157,7 @@
               <p class="mt-1.5 text-xs text-rose-600">{$form.errors.end_date}</p>
             {/if}
           </div>
-          <div class="sm:col-span-2">
+          <div>
             <label for="status" class="block text-sm font-medium text-slate-700">Estado</label>
             <select id="status" bind:value={$form.status}
               class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0">
@@ -157,6 +165,20 @@
                 <option value={opt.value}>{opt.label}</option>
               {/each}
             </select>
+          </div>
+          <div>
+            <label for="priority" class="block text-sm font-medium text-slate-700">Prioridad</label>
+            <select id="priority" bind:value={$form.priority}
+              class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0">
+              {#each priorityOptions as opt}
+                <option value={opt.value}>{opt.label}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label for="deadline" class="block text-sm font-medium text-slate-700">Fecha límite del proyecto</label>
+            <input id="deadline" type="date" bind:value={$form.deadline}
+              class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0" />
           </div>
         </div>
       </div>
