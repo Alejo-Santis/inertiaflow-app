@@ -82,6 +82,14 @@
               </span>
             </div>
 
+            <!-- Org badge -->
+            {#if project.organization}
+              <div class="mt-2 flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full" style="background-color: {project.organization.color ?? '#6366f1'};"></span>
+                <span class="text-xs text-slate-500">{project.organization.name}</span>
+              </div>
+            {/if}
+
             <!-- Description -->
             {#if project.description}
               <p class="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">{project.description}</p>

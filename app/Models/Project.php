@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Organization;
+use App\Models\Department;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +27,8 @@ class Project extends Model
     }
 
     protected $fillable = [
+        'organization_id',
+        'department_id',
         'owner_id',
         'name',
         'description',
@@ -35,6 +39,16 @@ class Project extends Model
         'priority',
         'deadline',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
 
     public function owner(): BelongsTo
     {

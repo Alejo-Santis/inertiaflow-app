@@ -298,6 +298,16 @@
           </Link>
 
           <Link
+            href={route('organizations.index')}
+            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive('organizations.index') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+            </svg>
+            Organizaciones
+          </Link>
+
+          <Link
             href={route('analytics')}
             class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive('analytics') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
           >
@@ -367,28 +377,26 @@
               </div>
               <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
                 {#if notifications.length === 0}
-                  <p class="px-4 py-6 text-center text-xs text-slate-500">Sin actividad reciente</p>
+                  <p class="px-4 py-6 text-center text-xs text-slate-500">Sin notificaciones aún</p>
                 {:else}
                   {#each notifications as notif}
-                    <Link
-                      href={route('projects.tasks.show', [notif.project_uuid, notif.uuid])}
+                    {@const isUnread = !notif.read_at}
+                    <a
+                      href={notif.url ?? route('notifications.index')}
                       onclick={() => (notifOpen = false)}
-                      class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition {!notif.read_at ? 'bg-indigo-50/40' : ''}"
+                      class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition {isUnread ? 'bg-indigo-50/40' : ''}"
                     >
-                      <div
-                        class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white"
-                        style="background-color: {notif.project_color ?? '#6366f1'};"
-                      >
-                        {notif.project_name?.charAt(0).toUpperCase()}
+                      <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-bold text-indigo-700">
+                        {notif.type === 'task_assigned' ? '✓' : notif.type === 'comment_added' ? '💬' : notif.type === 'mentioned' ? '@' : notif.type === 'meeting_invite' ? '📅' : notif.type === 'task_due' ? '⏰' : '●'}
                       </div>
                       <div class="min-w-0 flex-1">
                         <p class="truncate text-xs font-medium text-slate-800">{notif.title}</p>
-                        <p class="text-[10px] text-slate-500">{notif.project_name} · {notif.updated_at}</p>
+                        <p class="text-[10px] text-slate-500">{notif.created_at}</p>
                       </div>
-                      {#if !notif.read_at}
+                      {#if isUnread}
                         <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500"></span>
                       {/if}
-                    </Link>
+                    </a>
                   {/each}
                 {/if}
               </div>

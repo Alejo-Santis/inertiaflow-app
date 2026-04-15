@@ -4,17 +4,23 @@
   import route from 'ziggy-js';
 
   export let project: any;
+  export let organizations: { id: number; uuid: string; name: string; color: string; departments: { id: number; uuid: string; name: string }[] }[] = [];
 
   const form = useForm({
-    name:        project.name,
-    description: project.description ?? '',
-    start_date:  project.start_date  ?? '',
-    end_date:    project.end_date    ?? '',
-    status:      project.status,
-    color:       project.color ?? '#6366f1',
-    priority:    project.priority ?? 'medium',
-    deadline:    project.deadline ?? '',
+    name:            project.name,
+    description:     project.description    ?? '',
+    start_date:      project.start_date     ?? '',
+    end_date:        project.end_date       ?? '',
+    status:          project.status,
+    color:           project.color          ?? '#6366f1',
+    priority:        project.priority       ?? 'medium',
+    deadline:        project.deadline       ?? '',
+    organization_id: project.organization_id ?? '' as string | number,
+    department_id:   project.department_id   ?? '' as string | number,
   });
+
+  $: selectedOrg = organizations.find(o => o.id === Number($form.organization_id)) ?? null;
+  $: if ($form.organization_id === '') $form.department_id = '';
 
   const statusOptions = [
     { value: 'active',    label: 'Activo' },
@@ -182,6 +188,55 @@
           </div>
         </div>
       </div>
+
+      <!-- Organización -->
+      {#if organizations.length > 0}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+            </svg>
+            Organización (opcional)
+          </h2>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="edit_organization_id" class="block text-sm font-medium text-slate-700">Organización</label>
+              <select
+                id="edit_organization_id"
+                bind:value={$form.organization_id}
+                class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+              >
+                <option value="">Sin organización</option>
+                {#each organizations as org}
+                  <option value={org.id}>{org.name}</option>
+                {/each}
+              </select>
+            </div>
+            <div>
+              <label for="edit_department_id" class="block text-sm font-medium text-slate-700">Departamento</label>
+              <select
+                id="edit_department_id"
+                bind:value={$form.department_id}
+                disabled={!selectedOrg || selectedOrg.departments.length === 0}
+                class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Sin departamento</option>
+                {#if selectedOrg}
+                  {#each selectedOrg.departments as dept}
+                    <option value={dept.id}>{dept.name}</option>
+                  {/each}
+                {/if}
+              </select>
+            </div>
+          </div>
+          {#if selectedOrg}
+            <p class="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+              <span class="inline-block h-2.5 w-2.5 rounded-full" style="background-color: {selectedOrg.color};"></span>
+              Proyecto asignado a <strong class="text-slate-700">{selectedOrg.name}</strong>
+            </p>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Color -->
       <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

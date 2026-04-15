@@ -14,9 +14,12 @@ class AnalyticsController extends Controller
     {
         $user = $request->user();
 
-        // Proyectos del usuario (owner o miembro)
+        // Proyectos accesibles: propios, miembro directo o de orgs donde pertenece
+        $orgIds = $user->organizationMemberships()->pluck('organization_id');
+
         $projectIds = Project::where('owner_id', $user->id)
             ->orWhereHas('users', fn ($q) => $q->where('users.id', $user->id))
+            ->orWhereIn('organization_id', $orgIds)
             ->pluck('id');
 
         // Stats globales

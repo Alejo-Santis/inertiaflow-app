@@ -6,11 +6,12 @@
   export let notifications: any;
 
   const typeConfig: Record<string, { label: string; icon: string; color: string }> = {
-    task_assigned: { label: 'Tarea asignada',   icon: '✓', color: 'bg-indigo-100 text-indigo-700' },
-    comment_added: { label: 'Comentario',        icon: '💬', color: 'bg-sky-100 text-sky-700' },
-    mentioned:     { label: 'Mención',           icon: '@', color: 'bg-violet-100 text-violet-700' },
-    member_added:  { label: 'Miembro agregado',  icon: '👤', color: 'bg-emerald-100 text-emerald-700' },
-    task_due:      { label: 'Vencimiento',       icon: '⏰', color: 'bg-rose-100 text-rose-700' },
+    task_assigned:  { label: 'Tarea asignada',   icon: '✓',  color: 'bg-indigo-100 text-indigo-700' },
+    comment_added:  { label: 'Comentario',        icon: '💬', color: 'bg-sky-100 text-sky-700' },
+    mentioned:      { label: 'Mención',           icon: '@',  color: 'bg-violet-100 text-violet-700' },
+    member_added:   { label: 'Miembro agregado',  icon: '👤', color: 'bg-emerald-100 text-emerald-700' },
+    task_due:       { label: 'Vencimiento',       icon: '⏰', color: 'bg-rose-100 text-rose-700' },
+    meeting_invite: { label: 'Reunión',           icon: '📅', color: 'bg-amber-100 text-amber-700' },
   };
 
   function getType(type: string) {

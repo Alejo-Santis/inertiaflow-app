@@ -4,8 +4,13 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DepartmentMemberController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\MyTasksController;
+use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\NotificationController;
@@ -21,6 +26,9 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
+
+// Página pública de invitación (token único, sin necesidad de estar logueado para verla)
+Route::get('invitations/{token}', [OrganizationInvitationController::class, 'show'])->name('invitations.show');
 
 // Solo login — el registro público está deshabilitado
 Route::middleware('guest')->group(function () {
@@ -82,6 +90,33 @@ Route::middleware('auth')->group(function () {
     Route::post('notifications/mark-all-read',              [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
     Route::patch('notifications/{notification}/read',       [NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::delete('notifications/{notification}',           [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Organizaciones
+    Route::resource('organizations', OrganizationController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+    Route::prefix('organizations/{organization}')->name('organizations.')->group(function () {
+        // Invitaciones
+        Route::post('invitations',                          [OrganizationInvitationController::class, 'store'])->name('invitations.store');
+        Route::post('invitations/{token}/accept',           [OrganizationInvitationController::class, 'accept'])->name('invitations.accept');
+        Route::delete('invitations/{invitation}',           [OrganizationInvitationController::class, 'destroy'])->name('invitations.destroy');
+
+        // Miembros de la organización
+        Route::post('members',                         [OrganizationMemberController::class, 'store'])->name('members.store');
+        Route::patch('members/{user}',                 [OrganizationMemberController::class, 'update'])->name('members.update');
+        Route::delete('members/{user}',                [OrganizationMemberController::class, 'destroy'])->name('members.destroy');
+
+        // Departamentos
+        Route::post('departments',                     [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('departments/{department}',         [DepartmentController::class, 'show'])->name('departments.show');
+        Route::patch('departments/{department}',       [DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('departments/{department}',      [DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+        // Miembros de un departamento
+        Route::post('departments/{department}/members',                [DepartmentMemberController::class, 'store'])->name('departments.members.store');
+        Route::patch('departments/{department}/members/{user}',        [DepartmentMemberController::class, 'update'])->name('departments.members.update');
+        Route::delete('departments/{department}/members/{user}',       [DepartmentMemberController::class, 'destroy'])->name('departments.members.destroy');
+    });
 
     // Gestión de usuarios + audit logs — solo admin
     Route::prefix('admin')->name('admin.')->group(function () {

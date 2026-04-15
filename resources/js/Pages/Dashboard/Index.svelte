@@ -5,6 +5,7 @@
 
   export let projects: any;
   export let user: any;
+  export let organizations: any[] = [];
 
   const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
     active:    { label: 'Activo',     color: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',  dot: 'bg-emerald-500' },
@@ -113,6 +114,40 @@
     </div>
   </div>
 
+  <!-- Organizations strip -->
+  {#if organizations.length > 0}
+    <div class="mb-6">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-700">Mis organizaciones</h2>
+        <Link href={route('organizations.index')} class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+          Ver todas →
+        </Link>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {#each organizations as org}
+          <Link
+            href={route('organizations.show', org.uuid)}
+            class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+          >
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm"
+              style="background-color: {org.color};"
+            >
+              {org.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-medium text-slate-900 group-hover:text-indigo-700">{org.name}</p>
+              <p class="text-xs text-slate-500">
+                {org.members_count} miembro{org.members_count !== 1 ? 's' : ''}
+                · {org.projects_count} proyecto{org.projects_count !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </Link>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   <!-- Bottom section: 2-column grid on large screens -->
   <div class="grid gap-6 lg:grid-cols-3">
 
@@ -152,6 +187,12 @@
                     {status.label}
                   </span>
                 </div>
+                {#if project.organization}
+                  <p class="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" style="background-color: {project.organization.color ?? '#6366f1'};"></span>
+                    {project.organization.name}
+                  </p>
+                {/if}
                 {#if (project.tasks_count ?? 0) > 0}
                   {@const pct = Math.round(((project.done_tasks_count ?? 0) / project.tasks_count) * 100)}
                   <div class="mt-1.5 flex items-center gap-2">

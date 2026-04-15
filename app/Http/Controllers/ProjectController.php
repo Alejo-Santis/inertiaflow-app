@@ -15,12 +15,21 @@ class ProjectController extends Controller
     {
         Gate::authorize('viewAny', Project::class);
 
-        $projects = Project::with('owner')
+        $user   = $request->user();
+        $orgIds = $user->organizationMemberships()->pluck('organization_id');
+
+        $projects = Project::with(['owner:id,name,uuid', 'organization:id,name,color,uuid'])
             ->withCount([
                 'tasks',
                 'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'done'),
                 'users as members_count',
             ])
+            ->where(function ($q) use ($user, $orgIds) {
+                $q->where('owner_id', $user->id)
+                  ->orWhereHas('users', fn ($sq) => $sq->where('users.id', $user->id))
+                  ->orWhereIn('organization_id', $orgIds);
+            })
+            ->latest()
             ->paginate(10);
 
         return Inertia::render('Projects/Index', [
@@ -44,7 +53,7 @@ class ProjectController extends Controller
             ->get(['id', 'name', 'email', 'uuid']);
 
         return Inertia::render('Projects/Show', [
-            'project'   => $project->load('owner'),
+            'project'   => $project->load(['owner', 'organization:id,name,color,uuid', 'department:id,name,color,uuid']),
             'members'   => $members,
             'available' => $available,
         ]);
@@ -54,7 +63,27 @@ class ProjectController extends Controller
     {
         Gate::authorize('create', Project::class);
 
-        return Inertia::render('Projects/Create');
+        $user = auth()->user();
+
+        $organizations = $user->organizations()
+            ->withPivot('role')
+            ->with(['departments:id,uuid,name,organization_id'])
+            ->get()
+            ->map(fn ($org) => [
+                'id'          => $org->id,
+                'uuid'        => $org->uuid,
+                'name'        => $org->name,
+                'color'       => $org->color ?? '#6366f1',
+                'departments' => $org->departments->map(fn ($d) => [
+                    'id'   => $d->id,
+                    'uuid' => $d->uuid,
+                    'name' => $d->name,
+                ])->values(),
+            ]);
+
+        return Inertia::render('Projects/Create', [
+            'organizations' => $organizations,
+        ]);
     }
 
     public function store(Request $request)
@@ -62,14 +91,16 @@ class ProjectController extends Controller
         Gate::authorize('create', Project::class);
 
         $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start_date'  => 'nullable|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
-            'status'      => 'required|string|in:active,on_hold,completed,cancelled',
-            'color'       => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'priority'    => 'required|string|in:low,medium,high',
-            'deadline'    => 'nullable|date',
+            'name'            => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'start_date'      => 'nullable|date',
+            'end_date'        => 'nullable|date|after_or_equal:start_date',
+            'status'          => 'required|string|in:active,on_hold,completed,cancelled',
+            'color'           => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'priority'        => 'required|string|in:low,medium,high',
+            'deadline'        => 'nullable|date',
+            'organization_id' => 'nullable|exists:organizations,id',
+            'department_id'   => 'nullable|exists:departments,id',
         ]);
 
         $data['owner_id'] = $request->user()->id;
@@ -83,8 +114,27 @@ class ProjectController extends Controller
     {
         Gate::authorize('view', $project);
 
+        $user = auth()->user();
+
+        $organizations = $user->organizations()
+            ->withPivot('role')
+            ->with(['departments:id,uuid,name,organization_id'])
+            ->get()
+            ->map(fn ($org) => [
+                'id'          => $org->id,
+                'uuid'        => $org->uuid,
+                'name'        => $org->name,
+                'color'       => $org->color ?? '#6366f1',
+                'departments' => $org->departments->map(fn ($d) => [
+                    'id'   => $d->id,
+                    'uuid' => $d->uuid,
+                    'name' => $d->name,
+                ])->values(),
+            ]);
+
         return Inertia::render('Projects/Edit', [
-            'project' => $project,
+            'project'       => $project,
+            'organizations' => $organizations,
         ]);
     }
 
@@ -93,14 +143,16 @@ class ProjectController extends Controller
         Gate::authorize('view', $project);
 
         $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start_date'  => 'nullable|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
-            'status'      => 'required|string|in:active,on_hold,completed,cancelled',
-            'color'       => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'priority'    => 'required|string|in:low,medium,high',
-            'deadline'    => 'nullable|date',
+            'name'            => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'start_date'      => 'nullable|date',
+            'end_date'        => 'nullable|date|after_or_equal:start_date',
+            'status'          => 'required|string|in:active,on_hold,completed,cancelled',
+            'color'           => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'priority'        => 'required|string|in:low,medium,high',
+            'deadline'        => 'nullable|date',
+            'organization_id' => 'nullable|exists:organizations,id',
+            'department_id'   => 'nullable|exists:departments,id',
         ]);
 
         $project->update($data);
