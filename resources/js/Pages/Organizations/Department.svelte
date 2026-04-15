@@ -212,8 +212,9 @@
         {#if available.length > 0}
           <div class="space-y-3 p-4">
             <div>
-              <label class="mb-1 block text-xs font-medium text-slate-600">Usuario</label>
+              <label class="mb-1 block text-xs font-medium text-slate-600" for="user-select">Usuario</label>
               <select
+                id="user-select"
                 bind:value={$addForm.user_id}
                 class="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
@@ -225,8 +226,9 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-xs font-medium text-slate-600">Rol en el equipo</label>
+              <label class="mb-1 block text-xs font-medium text-slate-600" for="role-select">Rol en el equipo</label>
               <select
+                id="role-select"
                 bind:value={$addForm.role}
                 class="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >

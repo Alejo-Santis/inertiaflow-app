@@ -397,7 +397,9 @@
     <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
         <h3 class="font-semibold text-slate-900">Nuevo departamento</h3>
-        <button onclick={() => (deptModal = false)} class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
+        <button onclick={() => (deptModal = false)}
+        aria-label="Cerrar"
+        class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
@@ -406,8 +408,9 @@
 
       <div class="space-y-4 p-6">
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Nombre *</label>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700" for="dept-name">Nombre *</label>
           <input
+            id="dept-name"
             bind:value={$deptForm.name}
             type="text"
             placeholder="Ej: Desarrollo, Diseño, QA…"
@@ -419,8 +422,9 @@
         </div>
 
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Descripción</label>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700" for="dept-description">Descripción</label>
           <textarea
+            id="dept-description"
             bind:value={$deptForm.description}
             rows="2"
             placeholder="Descripción opcional…"
@@ -429,10 +433,11 @@
         </div>
 
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Color</label>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700" for="dept-color">Color</label>
           <div class="flex flex-wrap gap-2">
             {#each deptColors as c}
               <button
+                aria-label="Seleccionar color {c}"
                 onclick={() => ($deptForm.color = c)}
                 class="h-7 w-7 rounded-lg transition hover:scale-110 {$deptForm.color === c ? 'ring-2 ring-offset-2 ring-slate-400' : ''}"
                 style="background-color: {c};"
@@ -442,8 +447,9 @@
         </div>
 
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Team Lead (opcional)</label>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700" for="dept-lead">Team Le    ad (opcional)</label>
           <select
+            id="dept-lead"
             bind:value={$deptForm.lead_id}
             class="w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
