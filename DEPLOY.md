@@ -1,44 +1,96 @@
-# InertiaFlow — Guía de despliegue en producción
+# InertiaFlow — Despliegue en AWS Free Tier con DuckDNS
 
-Esta guía cubre el despliegue completo en un servidor Ubuntu/Debian con **Nginx** o **Apache2**, PostgreSQL, SSL y cola de trabajos con Supervisor.
+> Stack: Ubuntu 24.04 · Nginx · PHP 8.3 · PostgreSQL 16 · Supervisor · Let's Encrypt
 
 ---
 
 ## Índice
 
-1. [Requisitos del servidor](#1-requisitos-del-servidor)
-2. [Preparar el servidor](#2-preparar-el-servidor)
-3. [Configurar PostgreSQL](#3-configurar-postgresql)
-4. [Clonar y configurar la aplicación](#4-clonar-y-configurar-la-aplicación)
-5. [Configurar Nginx](#5-configurar-nginx)
-6. [Configurar Apache2](#6-configurar-apache2)
-7. [Certificado SSL con Let's Encrypt](#7-certificado-ssl-con-lets-encrypt)
-8. [Queue worker con Supervisor](#8-queue-worker-con-supervisor)
-9. [Permisos y caché final](#9-permisos-y-caché-final)
-10. [Checklist de verificación](#10-checklist-de-verificación)
-11. [Actualizaciones futuras](#11-actualizaciones-futuras)
+1. [AWS — Crear la instancia EC2](#1-aws--crear-la-instancia-ec2)
+2. [DuckDNS — Dominio gratuito](#2-duckdns--dominio-gratuito)
+3. [Servidor — Instalar el stack](#3-servidor--instalar-el-stack)
+4. [PostgreSQL — Base de datos](#4-postgresql--base-de-datos)
+5. [Aplicación — Subir y configurar](#5-aplicación--subir-y-configurar)
+6. [Nginx — Servidor web](#6-nginx--servidor-web)
+7. [SSL — Certificado HTTPS gratis](#7-ssl--certificado-https-gratis)
+8. [Supervisor — Worker de emails](#8-supervisor--worker-de-emails)
+9. [Setup inicial de la app](#9-setup-inicial-de-la-app)
+10. [Verificación final](#10-verificación-final)
+11. [Actualizaciones y mantenimiento](#11-actualizaciones-y-mantenimiento)
 
 ---
 
-## 1. Requisitos del servidor
+## 1. AWS — Crear la instancia EC2
 
-- Ubuntu 22.04 LTS / Debian 12 (recomendado)
-- RAM: mínimo 1 GB (2 GB recomendado)
-- Disco: mínimo 10 GB libres
-- Acceso root o sudo
-- Puertos abiertos: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+### 1.1 Lanzar la instancia
+
+1. Abre [AWS Console → EC2](https://console.aws.amazon.com/ec2)
+2. Click **"Launch Instance"**
+3. Configura:
+
+| Campo | Valor |
+|-------|-------|
+| Name | `inertiaflow-prod` |
+| AMI | **Ubuntu Server 24.04 LTS** (Free tier eligible) |
+| Instance type | **t2.micro** (Free tier: 750 h/mes gratis por 12 meses) |
+| Key pair | Crea uno nuevo → descarga el `.pem` → guárdalo en un lugar seguro |
+| Storage | **20 GB** gp3 (Free tier incluye 30 GB) |
+
+4. En **Network settings → Edit** agrega estas reglas de entrada al Security Group:
+
+| Type | Protocol | Port range | Source |
+|------|----------|-----------|--------|
+| SSH | TCP | 22 | My IP *(solo tu IP para mayor seguridad)* |
+| HTTP | TCP | 80 | 0.0.0.0/0 |
+| HTTPS | TCP | 443 | 0.0.0.0/0 |
+
+5. Click **"Launch Instance"** y espera 1-2 minutos.
+
+### 1.2 IP Elástica (permanente)
+
+> Sin IP elástica, la IP pública cambia cada vez que reinicias el servidor.
+
+1. EC2 → **Elastic IPs** → **Allocate Elastic IP address**
+2. Selecciona la IP creada → **Actions → Associate Elastic IP address**
+3. Selecciona tu instancia `inertiaflow-prod` → **Associate**
+4. **Anota la IP.** Ejemplo: `54.123.45.67`
 
 ---
 
-## 2. Preparar el servidor
+## 2. DuckDNS — Dominio gratuito
 
-### Actualizar el sistema
+1. Entra a [duckdns.org](https://www.duckdns.org) con tu cuenta de Google o GitHub
+2. Crea un subdominio. Ejemplo: `miempresa` → quedará `miempresa.duckdns.org`
+3. En el campo **"current ip"** pega tu **Elastic IP** de AWS (`54.123.45.67`)
+4. Click **"update ip"** → debe aparecer `OK` en verde
+
+Verifica desde tu terminal local (espera 1-2 minutos):
+
+```bash
+ping miempresa.duckdns.org
+# Debe resolver tu Elastic IP
+```
+
+---
+
+## 3. Servidor — Instalar el stack
+
+### 3.1 Conectarse por SSH
+
+```bash
+# Desde tu máquina local
+chmod 400 tu-key.pem
+ssh -i tu-key.pem ubuntu@54.123.45.67
+```
+
+### 3.2 Actualizar el sistema
 
 ```bash
 sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git unzip zip
 ```
 
-### Instalar PHP 8.3 y extensiones
+### 3.3 PHP 8.3 y extensiones requeridas
 
 ```bash
 sudo apt install -y software-properties-common
@@ -48,28 +100,50 @@ sudo apt update
 sudo apt install -y \
   php8.3 php8.3-fpm php8.3-cli \
   php8.3-pgsql php8.3-mbstring php8.3-xml \
-  php8.3-bcmath php8.3-ctype php8.3-tokenizer \
-  php8.3-json php8.3-openssl php8.3-curl \
-  php8.3-zip php8.3-intl
+  php8.3-curl php8.3-zip php8.3-bcmath \
+  php8.3-tokenizer php8.3-intl php8.3-gd
+
+php -v   # Debe mostrar PHP 8.3.x
 ```
 
-### Instalar Composer
+### 3.4 Nginx
+
+```bash
+sudo apt install -y nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+```
+
+### 3.5 Composer
 
 ```bash
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
-composer --version
+composer --version   # Debe mostrar 2.x
 ```
 
-### Instalar Node.js 20.x
+### 3.6 Node.js 22
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
-node --version && npm --version
+node -v   # v22.x
+npm -v    # 10.x
 ```
 
-### Instalar PostgreSQL
+### 3.7 Supervisor (para el worker de emails)
+
+```bash
+sudo apt install -y supervisor
+sudo systemctl enable supervisor
+sudo systemctl start supervisor
+```
+
+---
+
+## 4. PostgreSQL — Base de datos
+
+### 4.1 Instalar
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
@@ -77,16 +151,16 @@ sudo systemctl enable postgresql
 sudo systemctl start postgresql
 ```
 
----
-
-## 3. Configurar PostgreSQL
+### 4.2 Crear usuario y base de datos
 
 ```bash
-# Acceder como usuario postgres
 sudo -u postgres psql
+```
 
--- Dentro de psql:
-CREATE USER inertiaflow WITH PASSWORD 'contraseña_muy_segura';
+Dentro de psql ejecuta *(cambia la contraseña)*:
+
+```sql
+CREATE USER inertiaflow WITH PASSWORD 'TuContraseñaSegura2024!';
 CREATE DATABASE inertiaflow_db OWNER inertiaflow;
 GRANT ALL PRIVILEGES ON DATABASE inertiaflow_db TO inertiaflow;
 \q
@@ -94,160 +168,156 @@ GRANT ALL PRIVILEGES ON DATABASE inertiaflow_db TO inertiaflow;
 
 ---
 
-## 4. Clonar y configurar la aplicación
+## 5. Aplicación — Subir y configurar
 
-### Crear directorio y clonar
+### 5.1 Crear directorio
 
 ```bash
 sudo mkdir -p /var/www/inertiaflow
-sudo chown $USER:$USER /var/www/inertiaflow
+sudo chown ubuntu:ubuntu /var/www/inertiaflow
+```
 
-git clone <url-del-repo> /var/www/inertiaflow
+### 5.2 Subir el código
+
+**Desde tu máquina local** *(recomendado para la primera vez)*:
+
+```bash
+# Ejecuta esto en tu máquina local, NO en el servidor
+cd /ruta/local/inertiaflow-app
+
+rsync -avz \
+  --exclude='node_modules' \
+  --exclude='vendor' \
+  --exclude='.git' \
+  --exclude='.env' \
+  -e "ssh -i tu-key.pem" \
+  . ubuntu@54.123.45.67:/var/www/inertiaflow/
+```
+
+**Alternativa — clonar desde GitHub** *(si tienes el repo subido)*:
+
+```bash
+# En el servidor
+git clone https://github.com/tu-usuario/inertiaflow.git /var/www/inertiaflow
+```
+
+### 5.3 Instalar dependencias en el servidor
+
+```bash
 cd /var/www/inertiaflow
-```
 
-### Instalar dependencias
+# Dependencias PHP (sin paquetes de desarrollo)
+composer install --no-dev --optimize-autoloader
 
-```bash
-composer install --optimize-autoloader --no-dev
+# Dependencias JS y compilar assets
 npm install
+npm run build
+
+# Liberar espacio eliminando node_modules
+rm -rf node_modules
 ```
 
-### Configurar el entorno
+### 5.4 Configurar el entorno
 
 ```bash
-cp .env.example .env
-php artisan key:generate
-nano .env   # o vim .env
+nano /var/www/inertiaflow/.env
 ```
 
-Ajustar como mínimo estas variables:
+Pega y ajusta estos valores:
 
-```env
-APP_NAME=InertiaFlow
+```ini
+APP_NAME="InertiaFlow"
 APP_ENV=production
+APP_KEY=                              # Se genera en el siguiente paso
 APP_DEBUG=false
-APP_URL=https://tudominio.com
-APP_LOCALE=es
+APP_URL=https://miempresa.duckdns.org
 
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=inertiaflow_db
 DB_USERNAME=inertiaflow
-DB_PASSWORD=contraseña_muy_segura
-
-SESSION_DRIVER=database
-SESSION_ENCRYPT=true
-SESSION_LIFETIME=120
+DB_PASSWORD=TuContraseñaSegura2024!
 
 QUEUE_CONNECTION=database
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
 CACHE_STORE=database
 
+# ── Email ──────────────────────────────────────────────────────
+# Opciones gratuitas recomendadas:
+#   Brevo (brevo.com)  → 300 emails/día gratis
+#   Resend (resend.com) → 3.000 emails/mes gratis
+#
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.tuproveedor.com
+MAIL_HOST=smtp-relay.brevo.com
 MAIL_PORT=587
-MAIL_USERNAME=usuario_smtp
-MAIL_PASSWORD=contraseña_smtp
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=noreply@tudominio.com
+MAIL_USERNAME=tu@email.com
+MAIL_PASSWORD=tu-api-key-brevo
+MAIL_FROM_ADDRESS=noreply@miempresa.duckdns.org
 MAIL_FROM_NAME="InertiaFlow"
 ```
 
-### Ejecutar migraciones y seeder
+### 5.5 Generar clave y preparar la base de datos
 
 ```bash
-php artisan migrate --seed --force
-```
+cd /var/www/inertiaflow
 
-### Compilar assets para producción
+php artisan key:generate
+php artisan migrate --force
+php artisan storage:link
 
-```bash
-npm run build
-```
-
-### Optimizar Laravel
-
-```bash
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan optimize
-```
-
-### Permisos de almacenamiento
-
-```bash
-sudo chown -R www-data:www-data /var/www/inertiaflow/storage
-sudo chown -R www-data:www-data /var/www/inertiaflow/bootstrap/cache
-sudo chmod -R 775 /var/www/inertiaflow/storage
-sudo chmod -R 775 /var/www/inertiaflow/bootstrap/cache
+# Permisos de escritura para Nginx
+sudo chown -R www-data:www-data storage bootstrap/cache
+sudo chmod -R 775 storage bootstrap/cache
 ```
 
 ---
 
-## 5. Configurar Nginx
+## 6. Nginx — Servidor web
 
-### Instalar Nginx
-
-```bash
-sudo apt install -y nginx
-sudo systemctl enable nginx
-```
-
-### Crear virtual host
+### 6.1 Crear configuración del sitio
 
 ```bash
 sudo nano /etc/nginx/sites-available/inertiaflow
 ```
 
-Pegar la siguiente configuración (reemplaza `tudominio.com`):
+Pega *(reemplaza `miempresa.duckdns.org` en todas las líneas)*:
 
 ```nginx
 server {
     listen 80;
     listen [::]:80;
-    server_name tudominio.com www.tudominio.com;
-
-    # Redirigir todo a HTTPS (después de instalar SSL)
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name tudominio.com www.tudominio.com;
+    server_name miempresa.duckdns.org;
 
     root /var/www/inertiaflow/public;
     index index.php;
 
-    # SSL — Certbot completará estas líneas automáticamente
-    # ssl_certificate     /etc/letsencrypt/live/tudominio.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
+    charset utf-8;
 
-    # Seguridad de headers
+    # Headers de seguridad
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
-    add_header X-XSS-Protection "1; mode=block";
     add_header Referrer-Policy "strict-origin-when-cross-origin";
 
     # Logs
     access_log /var/log/nginx/inertiaflow_access.log;
     error_log  /var/log/nginx/inertiaflow_error.log;
 
-    # Tamaño máximo de subida
-    client_max_body_size 50M;
+    # Tamaño máximo de archivos adjuntos
+    client_max_body_size 20M;
 
-    # Gzip
+    # Gzip para mejor rendimiento
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+    gzip_types text/plain text/css application/json application/javascript
+               text/xml application/xml image/svg+xml;
 
-    # Inertia/Laravel: todas las rutas al index.php
+    # Laravel / Inertia — todas las rutas al index.php
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    # Assets compilados por Vite — caché agresivo
+    # Assets Vite — caché agresivo (nombres con hash)
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -256,152 +326,64 @@ server {
 
     # PHP-FPM
     location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
         fastcgi_read_timeout 300;
     }
 
-    # Bloquear acceso a archivos ocultos
-    location ~ /\. {
+    # Bloquear archivos ocultos y .env
+    location ~ /\.(?!well-known).* {
         deny all;
-    }
-
-    # Bloquear acceso directo a .env
-    location ~ /\.env {
-        deny all;
-        return 404;
     }
 }
 ```
 
-### Activar y verificar
+### 6.2 Activar el sitio
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/inertiaflow /etc/nginx/sites-enabled/
-sudo nginx -t                    # verificar sintaxis
+sudo rm -f /etc/nginx/sites-enabled/default   # quitar el sitio por defecto de nginx
+sudo nginx -t                                  # verificar sintaxis — debe decir "ok"
 sudo systemctl reload nginx
 ```
 
----
-
-## 6. Configurar Apache2
-
-### Instalar Apache2 y módulos
-
-```bash
-sudo apt install -y apache2
-sudo a2enmod rewrite headers ssl proxy_fcgi setenvif
-sudo a2enconf php8.3-fpm
-sudo systemctl enable apache2
-```
-
-### Crear virtual host
-
-```bash
-sudo nano /etc/apache2/sites-available/inertiaflow.conf
-```
-
-Pegar la siguiente configuración:
-
-```apache
-<VirtualHost *:80>
-    ServerName tudominio.com
-    ServerAlias www.tudominio.com
-
-    # Redirigir todo a HTTPS (después de instalar SSL)
-    Redirect permanent / https://tudominio.com/
-</VirtualHost>
-
-<VirtualHost *:443>
-    ServerName tudominio.com
-    ServerAlias www.tudominio.com
-
-    DocumentRoot /var/www/inertiaflow/public
-
-    # SSL — Certbot completará estas líneas automáticamente
-    # SSLEngine on
-    # SSLCertificateFile    /etc/letsencrypt/live/tudominio.com/fullchain.pem
-    # SSLCertificateKeyFile /etc/letsencrypt/live/tudominio.com/privkey.pem
-
-    # Seguridad de headers
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-
-    # Logs
-    ErrorLog  ${APACHE_LOG_DIR}/inertiaflow_error.log
-    CustomLog ${APACHE_LOG_DIR}/inertiaflow_access.log combined
-
-    # Tamaño máximo de subida
-    LimitRequestBody 52428800
-
-    <Directory /var/www/inertiaflow/public>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-
-    # PHP-FPM via socket
-    <FilesMatch \.php$>
-        SetHandler "proxy:unix:/run/php/php8.3-fpm.sock|fcgi://localhost"
-    </FilesMatch>
-
-    # Caché de assets compilados por Vite
-    <FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
-        Header set Cache-Control "max-age=31536000, public, immutable"
-    </FilesMatch>
-</VirtualHost>
-```
-
-> **Nota:** el archivo `public/.htaccess` ya viene incluido en Laravel y gestiona el rewrite de rutas automáticamente. Asegúrate de que `AllowOverride All` esté habilitado.
-
-### Activar y verificar
-
-```bash
-sudo a2ensite inertiaflow.conf
-sudo apache2ctl configtest           # verificar sintaxis
-sudo systemctl reload apache2
-```
+Prueba en el navegador: `http://miempresa.duckdns.org` — debe cargar la app (sin SSL aún).
 
 ---
 
-## 7. Certificado SSL con Let's Encrypt
+## 7. SSL — Certificado HTTPS gratis
 
 ```bash
-sudo apt install -y certbot
+sudo apt install -y certbot python3-certbot-nginx
 
-# Para Nginx:
-sudo apt install -y python3-certbot-nginx
-sudo certbot --nginx -d tudominio.com -d www.tudominio.com
-
-# Para Apache2:
-sudo apt install -y python3-certbot-apache
-sudo certbot --apache -d tudominio.com -d www.tudominio.com
+sudo certbot --nginx \
+  -d miempresa.duckdns.org \
+  --non-interactive \
+  --agree-tos \
+  --email tu@email.com \
+  --redirect   # fuerza redirección HTTP → HTTPS automáticamente
 ```
 
-Certbot configura automáticamente el bloque SSL y programa la renovación automática. Verificar:
+Certbot modifica Nginx automáticamente y programa la renovación cada 90 días.
+
+Verifica que la renovación automática funciona:
 
 ```bash
 sudo certbot renew --dry-run
+# Debe terminar con: "All simulated renewals succeeded"
 ```
+
+Ahora `https://miempresa.duckdns.org` debe cargar con candado verde.
 
 ---
 
-## 8. Queue worker con Supervisor
+## 8. Supervisor — Worker de emails
 
-La aplicación utiliza colas de base de datos para el envío de correos (recuperación de contraseña). Sin el worker, los correos no se enviarán.
+Sin el worker, los emails de invitaciones y asignaciones de tareas quedan atascados en la cola y nunca se envían.
 
-### Instalar Supervisor
-
-```bash
-sudo apt install -y supervisor
-sudo systemctl enable supervisor
-```
-
-### Crear configuración del worker
+### 8.1 Crear configuración
 
 ```bash
 sudo nano /etc/supervisor/conf.d/inertiaflow-worker.conf
@@ -410,123 +392,182 @@ sudo nano /etc/supervisor/conf.d/inertiaflow-worker.conf
 ```ini
 [program:inertiaflow-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/inertiaflow/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/inertiaflow/artisan queue:work --sleep=3 --tries=3 --max-time=3600 --timeout=120
+directory=/var/www/inertiaflow
 autostart=true
 autorestart=true
 stopasgroup=true
 killasgroup=true
 user=www-data
-numprocs=2
+numprocs=1
 redirect_stderr=true
-stdout_logfile=/var/log/inertiaflow-worker.log
+stdout_logfile=/var/www/inertiaflow/storage/logs/worker.log
 stopwaitsecs=3600
 ```
 
-### Activar el worker
+### 8.2 Activar y verificar
 
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl start inertiaflow-worker:*
 sudo supervisorctl status
+# Debe mostrar: inertiaflow-worker:inertiaflow-worker_00   RUNNING
 ```
 
 ---
 
-## 9. Permisos y caché final
+## 9. Setup inicial de la app
+
+Ejecuta el asistente interactivo de configuración:
 
 ```bash
-cd /var/www/inertiaflow
+php artisan app:setup
+```
 
-# Permisos
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
+El comando te guía paso a paso:
 
-# Enlace simbólico de storage (si usas uploads)
-php artisan storage:link
+```
+[ 1/4 ] Crea roles y permisos del sistema
+[ 2/4 ] Pide nombre, email y contraseña del administrador
+[ 3/4 ] Pide el nombre de la empresa / organización
+         └── Opcionalmente crea el primer departamento
+[ 4/4 ] Muestra resumen y próximos pasos
+```
 
-# Optimización final
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan optimize
+Al terminar verás algo así:
+
+```
+┌──────────────────┬─────────────────────────────────────┐
+│ URL de la app    │ https://miempresa.duckdns.org        │
+│ Administrador    │ Juan Pérez                           │
+│ Email de acceso  │ juan@miempresa.com                   │
+│ Organización     │ Mi Empresa S.A.                      │
+└──────────────────┴─────────────────────────────────────┘
 ```
 
 ---
 
-## 10. Checklist de verificación
+## 10. Verificación final
 
-Antes de dar acceso a los usuarios, verifica cada punto:
+### Checklist antes de dar acceso al equipo
 
-- [ ] `APP_DEBUG=false` en `.env`
-- [ ] `APP_ENV=production` en `.env`
-- [ ] `APP_URL` apunta al dominio real con `https://`
-- [ ] Certificado SSL instalado y funcionando
-- [ ] Correo real configurado (no Mailtrap sandbox) — probar con `php artisan tinker` → `Mail::raw('test', fn($m) => $m->to('tu@email.com')->subject('Test'))`
-- [ ] Contraseñas del seeder cambiadas (`admin@example.com` y `demo@example.com`)
-- [ ] Queue worker activo: `sudo supervisorctl status`
-- [ ] `php artisan queue:work` puede procesar jobs: revisar `/var/log/inertiaflow-worker.log`
-- [ ] Assets compilados con `npm run build` (no `npm run dev`)
-- [ ] Cachés aplicadas: `php artisan optimize`
-- [ ] Permisos de `storage/` y `bootstrap/cache/` son de `www-data`
-- [ ] Acceso directo a `.env` bloqueado (probar `https://tudominio.com/.env` — debe retornar 403/404)
-- [ ] Logs de Nginx/Apache sin errores: `sudo tail -f /var/log/nginx/inertiaflow_error.log`
+```bash
+# Estado de todos los servicios
+sudo systemctl status nginx php8.3-fpm postgresql supervisor
+```
+
+- [ ] `https://miempresa.duckdns.org` carga la pantalla de login con candado HTTPS
+- [ ] Login con el email y contraseña del `app:setup` funciona
+- [ ] `APP_DEBUG=false` en `.env` (nunca mostrar errores al usuario)
+- [ ] Worker activo: `sudo supervisorctl status` muestra `RUNNING`
+- [ ] Email configurado — prueba enviando una invitación de org desde la app
+- [ ] `.env` inaccesible: visitar `https://miempresa.duckdns.org/.env` debe retornar 403
+
+### Ver logs en tiempo real
+
+```bash
+# Errores de la aplicación
+tail -f /var/www/inertiaflow/storage/logs/laravel.log
+
+# Emails procesados por el worker
+tail -f /var/www/inertiaflow/storage/logs/worker.log
+
+# Errores de Nginx
+sudo tail -f /var/log/nginx/inertiaflow_error.log
+```
 
 ---
 
-## 11. Actualizaciones futuras
+## 11. Actualizaciones y mantenimiento
 
-Cada vez que despliegues una nueva versión:
+### Desplegar una nueva versión
 
 ```bash
 cd /var/www/inertiaflow
 
-# 1. Activar modo mantenimiento
+# 1. Modo mantenimiento (muestra página de "Volvemos pronto")
 php artisan down
 
-# 2. Traer cambios
+# 2. Traer cambios (si usas Git)
 git pull origin main
 
-# 3. Actualizar dependencias
-composer install --optimize-autoloader --no-dev
-npm install
+# 3. Dependencias y assets
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build && rm -rf node_modules
 
 # 4. Migraciones pendientes
 php artisan migrate --force
 
-# 5. Recompilar assets
-npm run build
-
-# 6. Limpiar y regenerar cachés
+# 5. Regenerar cachés
 php artisan optimize:clear
-php artisan optimize
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 
-# 7. Reiniciar queue worker
+# 6. Reiniciar worker
 sudo supervisorctl restart inertiaflow-worker:*
 
-# 8. Volver a producción
+# 7. Permisos (por si acaso)
+sudo chown -R www-data:www-data storage bootstrap/cache
+
+# 8. Volver online
 php artisan up
 ```
 
----
-
-## Referencia rápida de comandos
+### Backup de la base de datos
 
 ```bash
-# Estado del worker
-sudo supervisorctl status inertiaflow-worker:*
+# Crear backup
+pg_dump -U inertiaflow -h 127.0.0.1 inertiaflow_db \
+  > ~/backup_inertiaflow_$(date +%Y%m%d_%H%M).sql
 
-# Logs de la app
-tail -f /var/www/inertiaflow/storage/logs/laravel.log
+# Restaurar desde backup
+psql -U inertiaflow -h 127.0.0.1 inertiaflow_db < ~/backup_inertiaflow_20260415_1200.sql
+```
 
-# Logs del servidor web
-tail -f /var/log/nginx/inertiaflow_error.log      # Nginx
-tail -f /var/log/apache2/inertiaflow_error.log    # Apache2
+### Referencia rápida de comandos
 
-# Reiniciar PHP-FPM
+```bash
+# Estado del worker de emails
+sudo supervisorctl status
+
+# Reiniciar servicios
+sudo systemctl restart nginx
 sudo systemctl restart php8.3-fpm
+sudo supervisorctl restart inertiaflow-worker:*
 
 # Modo mantenimiento
 php artisan down    # activar
 php artisan up      # desactivar
+
+# Limpiar todo si algo falla
+php artisan optimize:clear
+```
+
+---
+
+## Costos en AWS Free Tier
+
+| Recurso | Incluido gratis | Detalle |
+|---------|----------------|---------|
+| EC2 t2.micro | 750 h/mes × 12 meses | 1 instancia corriendo 24/7 |
+| EBS 20 GB | 30 GB/mes | Almacenamiento incluido |
+| Elastic IP | Gratis si está asociada | Se cobra si no tiene instancia |
+| Transferencia de datos | 100 GB/mes salida | Más que suficiente para MVP |
+| **Total año 1** | **~$0 USD/mes** | Solo pagas el dominio si no usas DuckDNS |
+| Después de 12 meses | ~$8.50 USD/mes | t2.micro on-demand |
+
+---
+
+## Flujo completo del primer día
+
+```
+Admin entra con sus credenciales
+  → Organizaciones → ya existe la empresa creada por app:setup
+  → Invita al equipo por email (llega por la cola de Supervisor)
+  → Cada miembro acepta → recibe acceso automáticamente
+  → Admin crea proyectos asignados a la org
+  → Equipo trabaja: tareas · kanban · reuniones · comentarios
+  → Notificaciones in-app + emails de asignación en tiempo real
 ```
