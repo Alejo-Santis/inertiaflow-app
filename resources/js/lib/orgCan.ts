@@ -11,6 +11,7 @@
  *   if (can('create-dept')) { ... }
  */
 
+import { get } from 'svelte/store';
 import { usePage } from '@inertiajs/svelte';
 
 // Espejo de las constantes de OrgRole.php
@@ -48,8 +49,8 @@ export interface OrgMembership {
  * @param orgUuid UUID de la organización
  */
 export function useOrgAbilities(orgUuid: string): (action: OrgAction) => boolean {
-  const page = usePage();
-  const memberships: OrgMembership[] = (page.props.auth as any)?.orgMemberships ?? [];
+  const page = get(usePage());
+  const memberships: OrgMembership[] = (page?.props?.auth as any)?.orgMemberships ?? [];
   const membership = memberships.find(m => m.organization_uuid === orgUuid);
 
   if (!membership) {
@@ -63,8 +64,8 @@ export function useOrgAbilities(orgUuid: string): (action: OrgAction) => boolean
  * Devuelve todas las membresías del usuario.
  */
 export function useOrgMemberships(): OrgMembership[] {
-  const page = usePage();
-  return (page.props.auth as any)?.orgMemberships ?? [];
+  const page = get(usePage());
+  return (page?.props?.auth as any)?.orgMemberships ?? [];
 }
 
 /**
@@ -79,7 +80,7 @@ export function useOrgRole(orgUuid: string): string | null {
  * Devuelve true si el usuario tiene el permiso global de Spatie indicado.
  */
 export function useHasPermission(permission: string): boolean {
-  const page = usePage();
-  const permissions: string[] = (page.props.auth as any)?.permissions ?? [];
+  const page = get(usePage());
+  const permissions: string[] = (page?.props?.auth as any)?.permissions ?? [];
   return permissions.includes(permission);
 }

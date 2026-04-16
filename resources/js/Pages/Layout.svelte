@@ -61,16 +61,65 @@
   // ── Global search (Ctrl+K / Cmd+K) ────────────────────────────────────────
   let searchOpen    = false;
   let searchQuery   = '';
-  let searchResults = { projects: [] as any[], tasks: [] as any[] };
+  let searchResults = {
+    projects: [] as any[], tasks: [] as any[],
+    organizations: [] as any[], departments: [] as any[], members: [] as any[],
+  };
   let searchLoading = false;
   let searchIndex   = 0;   // keyboard navigation
   let searchDebounce: ReturnType<typeof setTimeout>;
   let searchInput: HTMLInputElement;
 
+  // Acciones rápidas que se muestran cuando el buscador está vacío
+  const quickActions = [
+    {
+      label: 'Nuevo proyecto',
+      hint: 'Crear',
+      routeName: 'projects.create',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />`,
+      color: '#6366f1',
+    },
+    {
+      label: 'Nueva organización',
+      hint: 'Crear',
+      routeName: 'organizations.create',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />`,
+      color: '#8b5cf6',
+    },
+    {
+      label: 'Mis tareas',
+      hint: 'Ir a',
+      routeName: 'my-tasks',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />`,
+      color: '#14b8a6',
+    },
+    {
+      label: 'Proyectos',
+      hint: 'Ir a',
+      routeName: 'projects.index',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />`,
+      color: '#f59e0b',
+    },
+    {
+      label: 'Organizaciones',
+      hint: 'Ir a',
+      routeName: 'organizations.index',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />`,
+      color: '#ec4899',
+    },
+    {
+      label: 'Reuniones',
+      hint: 'Ir a',
+      routeName: 'meetings.index',
+      icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />`,
+      color: '#10b981',
+    },
+  ] as const;
+
   function openSearch() {
     searchOpen  = true;
     searchQuery = '';
-    searchResults = { projects: [], tasks: [] };
+    searchResults = { projects: [], tasks: [], organizations: [], departments: [], members: [] };
     searchIndex = 0;
     setTimeout(() => searchInput?.focus(), 50);
   }
@@ -81,7 +130,10 @@
   }
 
   async function doSearch(q: string) {
-    if (q.length < 2) { searchResults = { projects: [], tasks: [] }; return; }
+    if (q.length < 2) {
+      searchResults = { projects: [], tasks: [], organizations: [], departments: [], members: [] };
+      return;
+    }
     searchLoading = true;
     try {
       const res  = await fetch(route('search') + '?q=' + encodeURIComponent(q));
@@ -98,24 +150,64 @@
   }
 
   $: allResults = [
-    ...searchResults.projects.map((p: any) => ({ type: 'project', ...p })),
-    ...searchResults.tasks.map((t: any)    => ({ type: 'task',    ...t })),
+    ...searchResults.projects.map((p: any)      => ({ type: 'project',      ...p })),
+    ...searchResults.tasks.map((t: any)          => ({ type: 'task',         ...t })),
+    ...searchResults.organizations.map((o: any)  => ({ type: 'organization', ...o })),
+    ...searchResults.departments.map((d: any)    => ({ type: 'department',   ...d })),
+    ...searchResults.members.map((m: any)        => ({ type: 'member',       ...m })),
   ];
+
+  // Lista unificada de items navegables: acciones rápidas cuando vacío, resultados cuando hay query
+  $: navigableItems = searchQuery.length === 0
+    ? quickActions.map(a => ({ type: 'quick' as const, ...a }))
+    : allResults;
+
+  // Resetear índice cuando cambia el modo (vacío ↔ con resultados) o llegan nuevos resultados
+  let _prevMode = '';
+  $: {
+    const mode = searchQuery.length === 0 ? 'quick' : 'results:' + allResults.length;
+    if (mode !== _prevMode) { _prevMode = mode; searchIndex = 0; }
+  }
 
   function navigateResult(item: any) {
     closeSearch();
-    if (item.type === 'project') {
+    if (item.type === 'quick') {
+      router.visit(route(item.routeName));
+    } else if (item.type === 'project') {
       router.visit(route('projects.show', item.uuid));
-    } else {
+    } else if (item.type === 'task') {
       router.visit(route('projects.tasks.show', [item.project_uuid, item.uuid]));
+    } else if (item.type === 'organization') {
+      router.visit(route('organizations.show', item.uuid));
+    } else if (item.type === 'department') {
+      router.visit(route('organizations.departments.show', [item.org_uuid, item.uuid]));
+    } else if (item.type === 'member') {
+      router.visit(route('organizations.show', item.org_uuid));
     }
   }
 
   function onSearchKeydown(e: KeyboardEvent) {
-    if (e.key === 'ArrowDown') { e.preventDefault(); searchIndex = Math.min(searchIndex + 1, allResults.length - 1); }
-    if (e.key === 'ArrowUp')   { e.preventDefault(); searchIndex = Math.max(searchIndex - 1, 0); }
-    if (e.key === 'Enter' && allResults[searchIndex]) navigateResult(allResults[searchIndex]);
+    const last = navigableItems.length - 1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      searchIndex = last < 0 ? 0 : Math.min(searchIndex + 1, last);
+      scrollActiveIntoView();
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      searchIndex = Math.max(searchIndex - 1, 0);
+      scrollActiveIntoView();
+    }
+    if (e.key === 'Enter' && navigableItems[searchIndex]) navigateResult(navigableItems[searchIndex]);
     if (e.key === 'Escape') closeSearch();
+  }
+
+  function scrollActiveIntoView() {
+    // Esperar un tick para que Svelte actualice el DOM antes de hacer scroll
+    setTimeout(() => {
+      const el = document.querySelector('[data-search-active="true"]');
+      el?.scrollIntoView({ block: 'nearest' });
+    }, 0);
   }
 
   import { onMount } from 'svelte';
@@ -146,7 +238,7 @@
   <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm" onclick={closeSearch}></div>
 
   <!-- Panel -->
-  <div class="fixed left-1/2 top-[12%] z-50 w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+  <div class="fixed left-1/2 top-[12%] z-50 w-full max-w-2xl -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
 
     <!-- Input -->
     <div class="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
@@ -166,21 +258,49 @@
         oninput={onSearchInput}
         onkeydown={onSearchKeydown}
         type="text"
-        placeholder="Buscar proyectos y tareas..."
+        placeholder="Buscar proyectos, tareas, organizaciones, departamentos..."
         class="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
       />
       <kbd class="hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:block">ESC</kbd>
     </div>
 
-    <!-- Results -->
-    {#if allResults.length > 0}
-      <div class="max-h-80 overflow-y-auto py-2">
+    <!-- Results / Quick actions -->
+    {#if searchQuery.length === 0}
+      <!-- Quick actions panel -->
+      <div class="py-2">
+        <p class="px-4 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Acciones rápidas</p>
+        <div class="grid grid-cols-2 gap-1.5 px-3 pb-3">
+          {#each quickActions as action, i}
+            <button
+              onclick={() => navigateResult({ type: 'quick', ...action })}
+              data-search-active={searchIndex === i ? 'true' : 'false'}
+              class="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition {searchIndex === i ? 'border-indigo-200 bg-indigo-50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white hover:shadow-sm'}"
+            >
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white"
+                   style="background-color: {action.color};">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  {@html action.icon}
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-xs font-semibold text-slate-700">{action.label}</p>
+                <p class="text-[10px] text-slate-400">{action.hint}</p>
+              </div>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {:else if allResults.length > 0}
+      <div class="max-h-[26rem] overflow-y-auto py-2">
+
         {#if searchResults.projects.length > 0}
+          {@const offset = 0}
           <p class="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Proyectos</p>
           {#each searchResults.projects as item, i}
-            {@const idx = i}
+            {@const idx = offset + i}
             <button
               onclick={() => navigateResult({ type: 'project', ...item })}
+              data-search-active={searchIndex === idx ? 'true' : 'false'}
               class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition {searchIndex === idx ? 'bg-indigo-50' : 'hover:bg-slate-50'}"
             >
               <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
@@ -188,17 +308,19 @@
                 {item.name.charAt(0).toUpperCase()}
               </div>
               <span class="flex-1 truncate text-sm font-medium text-slate-800">{item.name}</span>
-              <span class="text-[10px] text-slate-400">Proyecto</span>
+              <span class="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">Proyecto</span>
             </button>
           {/each}
         {/if}
 
         {#if searchResults.tasks.length > 0}
+          {@const offset = searchResults.projects.length}
           <p class="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tareas</p>
           {#each searchResults.tasks as item, i}
-            {@const idx = (searchResults.projects?.length ?? 0) + i}
+            {@const idx = offset + i}
             <button
               onclick={() => navigateResult({ type: 'task', ...item })}
+              data-search-active={searchIndex === idx ? 'true' : 'false'}
               class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition {searchIndex === idx ? 'bg-indigo-50' : 'hover:bg-slate-50'}"
             >
               <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
@@ -209,18 +331,84 @@
                 <p class="truncate text-sm font-medium text-slate-800">{item.title}</p>
                 <p class="text-[10px] text-slate-400">{item.project_name}</p>
               </div>
-              <span class="shrink-0 text-[10px] text-slate-400">Tarea</span>
+              <span class="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600">Tarea</span>
             </button>
           {/each}
         {/if}
+
+        {#if searchResults.organizations.length > 0}
+          {@const offset = searchResults.projects.length + searchResults.tasks.length}
+          <p class="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Organizaciones</p>
+          {#each searchResults.organizations as item, i}
+            {@const idx = offset + i}
+            <button
+              onclick={() => navigateResult({ type: 'organization', ...item })}
+              data-search-active={searchIndex === idx ? 'true' : 'false'}
+              class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition {searchIndex === idx ? 'bg-indigo-50' : 'hover:bg-slate-50'}"
+            >
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
+                {item.name.charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-800">{item.name}</p>
+                {#if item.description}
+                  <p class="truncate text-[10px] text-slate-400">{item.description}</p>
+                {/if}
+              </div>
+              <span class="shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-600">Org</span>
+            </button>
+          {/each}
+        {/if}
+
+        {#if searchResults.departments.length > 0}
+          {@const offset = searchResults.projects.length + searchResults.tasks.length + searchResults.organizations.length}
+          <p class="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Departamentos</p>
+          {#each searchResults.departments as item, i}
+            {@const idx = offset + i}
+            <button
+              onclick={() => navigateResult({ type: 'department', ...item })}
+              data-search-active={searchIndex === idx ? 'true' : 'false'}
+              class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition {searchIndex === idx ? 'bg-indigo-50' : 'hover:bg-slate-50'}"
+            >
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+                   style="background-color: {item.color ?? '#8b5cf6'};">
+                {item.name.charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-800">{item.name}</p>
+                <p class="truncate text-[10px] text-slate-400">{item.org_name}</p>
+              </div>
+              <span class="shrink-0 rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-medium text-pink-600">Depto</span>
+            </button>
+          {/each}
+        {/if}
+
+        {#if searchResults.members.length > 0}
+          {@const offset = searchResults.projects.length + searchResults.tasks.length + searchResults.organizations.length + searchResults.departments.length}
+          <p class="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Miembros en organizaciones</p>
+          {#each searchResults.members as item, i}
+            {@const idx = offset + i}
+            <button
+              onclick={() => navigateResult({ type: 'member', ...item })}
+              data-search-active={searchIndex === idx ? 'true' : 'false'}
+              class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition {searchIndex === idx ? 'bg-indigo-50' : 'hover:bg-slate-50'}"
+            >
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-400 to-emerald-600 text-[10px] font-bold text-white">
+                {item.user_name?.charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-800">{item.user_name}</p>
+                <p class="truncate text-[10px] text-slate-400">{item.role} · {item.org_name}</p>
+              </div>
+              <span class="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-600">Miembro</span>
+            </button>
+          {/each}
+        {/if}
+
       </div>
     {:else if searchQuery.length >= 2 && !searchLoading}
       <div class="px-4 py-10 text-center text-sm text-slate-500">
         Sin resultados para <strong>"{searchQuery}"</strong>
-      </div>
-    {:else if searchQuery.length === 0}
-      <div class="px-4 py-8 text-center text-xs text-slate-400">
-        Escribe al menos 2 caracteres para buscar
       </div>
     {/if}
 
