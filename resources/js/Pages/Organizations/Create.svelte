@@ -3,7 +3,13 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  const form = useForm({ name: '', description: '' });
+  const colorPresets = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
+    '#f97316', '#eab308', '#22c55e', '#06b6d4',
+    '#3b82f6', '#14b8a6', '#64748b', '#1e293b',
+  ];
+
+  const form = useForm({ name: '', description: '', color: '#6366f1' });
 
   function submit() {
     $form.post(route('organizations.store'));
@@ -51,6 +57,32 @@
             placeholder="¿Qué hace esta organización?…"
             class="w-full resize-none rounded-xl border border-slate-300 py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           ></textarea>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700">Color de la organización</label>
+          <div class="flex flex-wrap items-center gap-2">
+            {#each colorPresets as preset}
+              <button
+                type="button"
+                onclick={() => ($form.color = preset)}
+                class="h-7 w-7 rounded-lg shadow-sm transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2
+                  {$form.color === preset ? 'ring-2 ring-offset-2 scale-110' : ''}"
+                style="background-color: {preset}; --tw-ring-color: {preset};"
+                title={preset}
+              ></button>
+            {/each}
+            <input
+              type="color"
+              bind:value={$form.color}
+              class="h-7 w-7 cursor-pointer rounded-lg border-2 border-slate-300 p-0 shadow-sm"
+              title="Color personalizado"
+            />
+            <span class="ml-1 flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-mono text-slate-600">
+              <span class="inline-block h-3 w-3 rounded-full" style="background-color: {$form.color};"></span>
+              {$form.color}
+            </span>
+          </div>
         </div>
       </div>
 

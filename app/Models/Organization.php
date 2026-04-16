@@ -18,6 +18,7 @@ class Organization extends Model
         'name',
         'slug',
         'description',
+        'color',
         'logo',
         'settings',
     ];

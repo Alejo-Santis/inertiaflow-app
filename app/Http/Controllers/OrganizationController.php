@@ -74,10 +74,12 @@ class OrganizationController extends Controller
         $data = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
+            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
         $data['owner_id'] = $request->user()->id;
         $data['slug']     = Str::slug($data['name']) . '-' . Str::lower(Str::random(5));
+        $data['color']    = $data['color'] ?? '#6366f1';
 
         $org = Organization::create($data);
 
@@ -108,6 +110,7 @@ class OrganizationController extends Controller
         $data = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
+            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
         $organization->update($data);
