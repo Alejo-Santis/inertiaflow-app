@@ -70,6 +70,11 @@ class Project extends Model
         return $this->belongsToMany(User::class, 'project_members');
     }
 
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class);
+    }
+
     protected static function booted()
     {
         static::creating(function ($model) {

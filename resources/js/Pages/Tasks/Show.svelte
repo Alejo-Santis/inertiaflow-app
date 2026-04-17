@@ -8,6 +8,7 @@
   export let members: any[] = [];
   export let logged_hours: number = 0;
   export let attachments: any[] = [];
+  export let labels: { id: number; name: string; color: string }[] = [];
 
   const page = usePage();
   $: auth = $page.props.auth as any;
@@ -229,6 +230,18 @@
               {/if}
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 {task.status === 'done' ? 'line-through text-slate-500' : ''}">{task.title}</h1>
+            {#if task.labels?.length}
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                {#each task.labels as label}
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                    style="background-color: {label.color};"
+                  >
+                    {label.name}
+                  </span>
+                {/each}
+              </div>
+            {/if}
             {#if task.description}
               <p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{task.description}</p>
             {/if}
@@ -395,6 +408,32 @@
 
     <!-- Sidebar -->
     <div class="w-full lg:w-72 space-y-4 shrink-0">
+
+      <!-- Labels sidebar card -->
+      {#if labels.length}
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700">Etiquetas</h3>
+            <Link
+              href={route('projects.tasks.edit', [project.uuid, task.uuid])}
+              class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            >Editar</Link>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            {#each labels as label}
+              {@const active = task.labels?.some((l: any) => l.id === label.id)}
+              <span
+                class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition
+                  {active ? 'text-white' : 'bg-slate-100 text-slate-400'}"
+                style={active ? `background-color: ${label.color};` : ''}
+              >
+                <span class="h-1.5 w-1.5 rounded-full" style="background-color: {active ? 'rgba(255,255,255,0.5)' : label.color};"></span>
+                {label.name}
+              </span>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Time tracking card -->
       <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CommentAdded;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 
 class CommentController extends Controller
 {
@@ -27,14 +29,19 @@ class CommentController extends Controller
             'body'    => $validated['body'],
         ]);
 
+        $comment->load('user');
+        $task->load('project');
+
         // Parse @mentions
         preg_match_all('/@([\w\.\-]+)/', $validated['body'], $matches);
+        $mentionedUserIds = [];
         if (!empty($matches[1])) {
             $mentionedUsers = User::whereIn('name', $matches[1])
                 ->where('id', '!=', $request->user()->id)
                 ->get();
 
             foreach ($mentionedUsers as $mentioned) {
+                $mentionedUserIds[] = $mentioned->id;
                 NotificationService::send(
                     $mentioned->id,
                     'mentioned',
@@ -42,14 +49,17 @@ class CommentController extends Controller
                     substr($validated['body'], 0, 120),
                     route('projects.tasks.show', [$project->uuid, $task->uuid])
                 );
+                Mail::to($mentioned->email)->queue(new CommentAdded($task, $comment, $mentioned, 'mentioned'));
             }
         }
 
-        // Notify task assignees about the new comment (except commenter)
-        $assigneeIds = $task->assignees()
+        // Notify task assignees about the new comment (except commenter and already-notified mentions)
+        $assignees = $task->assignees()
             ->where('users.id', '!=', $request->user()->id)
-            ->pluck('users.id')
-            ->toArray();
+            ->whereNotIn('users.id', $mentionedUserIds)
+            ->get();
+
+        $assigneeIds = $assignees->pluck('id')->toArray();
 
         if (!empty($assigneeIds)) {
             NotificationService::sendToMany(
@@ -59,6 +69,9 @@ class CommentController extends Controller
                 substr($validated['body'], 0, 120),
                 route('projects.tasks.show', [$project->uuid, $task->uuid])
             );
+            foreach ($assignees as $assignee) {
+                Mail::to($assignee->email)->queue(new CommentAdded($task, $comment, $assignee, 'assignee'));
+            }
         }
 
         return back()->with('success', 'Comentario agregado.');

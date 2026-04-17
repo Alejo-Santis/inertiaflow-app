@@ -63,6 +63,11 @@ class Task extends Model
         return $this->hasMany(TaskAttachment::class);
     }
 
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'task_labels');
+    }
+
     protected static function booted()
     {
         static::creating(function ($model) {

@@ -18,11 +18,13 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\TimeLogController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMemberController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WorkloadController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -47,6 +49,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('dashboard',  [DashboardController::class,  'index'])->name('dashboard');
     Route::get('analytics',  [AnalyticsController::class,  'index'])->name('analytics');
+    Route::get('workload',   [WorkloadController::class,   'index'])->name('workload');
     Route::get('my-tasks',   [MyTasksController::class,    'index'])->name('my-tasks');
     Route::get('search',     [SearchController::class,     'index'])->name('search');
     Route::resource('meetings', MeetingController::class)->only(['index', 'store', 'update', 'destroy']);
@@ -78,12 +81,18 @@ Route::middleware('auth')->group(function () {
         // Adjuntos en tareas
         Route::post('tasks/{task}/attachments',                          [AttachmentController::class, 'store'])->name('tasks.attachments.store');
         Route::delete('tasks/{task}/attachments/{attachment}',           [AttachmentController::class, 'destroy'])->name('tasks.attachments.destroy');
+
+        // Labels del proyecto
+        Route::post('labels',           [LabelController::class, 'store'])->name('labels.store');
+        Route::delete('labels/{label}', [LabelController::class, 'destroy'])->name('labels.destroy');
     });
 
     // Perfil del usuario autenticado
     Route::get('profile',          [ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile',          [ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('profile/avatar',  [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::delete('profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
 
     // Notificaciones
     Route::get('notifications',                              [NotificationController::class, 'index'])->name('notifications.index');

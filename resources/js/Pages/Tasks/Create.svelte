@@ -5,6 +5,7 @@
 
   export let project: any;
   export let members: any[] = [];
+  export let labels: { id: number; name: string; color: string }[] = [];
 
   const form = useForm({
     title: '',
@@ -15,6 +16,7 @@
     estimated_hours: null,
     meeting_url: '',
     assignees: [] as number[],
+    label_ids: [] as number[],
   });
 
   function toggleAssignee(id: number) {
@@ -23,6 +25,15 @@
       $form.assignees = current.filter((x: number) => x !== id);
     } else {
       $form.assignees = [...current, id];
+    }
+  }
+
+  function toggleLabel(id: number) {
+    const current: number[] = $form.label_ids ?? [];
+    if (current.includes(id)) {
+      $form.label_ids = current.filter((x: number) => x !== id);
+    } else {
+      $form.label_ids = [...current, id];
     }
   }
 
@@ -230,6 +241,34 @@
           </div>
         </div>
       </div>
+
+      <!-- Labels card -->
+      {#if labels.length}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+            </svg>
+            Etiquetas
+          </h2>
+          <div class="flex flex-wrap gap-2">
+            {#each labels as label}
+              {@const selected = ($form.label_ids ?? []).includes(label.id)}
+              <button
+                type="button"
+                onclick={() => toggleLabel(label.id)}
+                class="inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-xs font-semibold transition
+                  {selected ? 'border-transparent text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}"
+                style={selected ? `background-color: ${label.color}; border-color: ${label.color};` : ''}
+              >
+                <span class="h-2 w-2 rounded-full" style="background-color: {label.color}; {selected ? 'background-color: rgba(255,255,255,0.6)' : ''}"></span>
+                {label.name}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Assignees card -->
       {#if members.length}

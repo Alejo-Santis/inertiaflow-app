@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\TaskAssigned;
+use App\Mail\TaskStatusChanged;
 use App\Models\Project;
 use App\Models\Task;
 use App\Services\NotificationService;
@@ -48,7 +49,7 @@ class TaskController extends Controller
     {
         Gate::authorize('view', $project);
 
-        $task->load(['creator', 'assignees', 'comments.user', 'timeLogs.user', 'attachments.user']);
+        $task->load(['creator', 'assignees', 'comments.user', 'timeLogs.user', 'attachments.user', 'labels']);
 
         $members = $project->users()->get(['users.id', 'users.name', 'users.uuid']);
 
@@ -60,12 +61,15 @@ class TaskController extends Controller
             'formatted_size' => $a->formatted_size,
         ]));
 
+        $labels = $project->labels()->orderBy('name')->get();
+
         return Inertia::render('Tasks/Show', [
             'project'      => $project,
             'task'         => $task,
             'members'      => $members,
             'logged_hours' => $loggedHours,
             'attachments'  => $attachments,
+            'labels'       => $labels,
         ]);
     }
 
@@ -89,10 +93,12 @@ class TaskController extends Controller
         Gate::authorize('create', Task::class);
 
         $members = $project->users()->get(['users.id', 'users.name', 'users.uuid']);
+        $labels  = $project->labels()->orderBy('name')->get();
 
         return Inertia::render('Tasks/Create', [
             'project' => $project,
             'members' => $members,
+            'labels'  => $labels,
         ]);
     }
 
@@ -110,6 +116,8 @@ class TaskController extends Controller
             'meeting_url'     => 'nullable|url',
             'assignees'       => 'nullable|array',
             'assignees.*'     => 'integer|exists:users,id',
+            'label_ids'       => 'nullable|array',
+            'label_ids.*'     => 'integer|exists:labels,id',
         ]);
 
         $validated['project_id'] = $project->id;
@@ -123,6 +131,8 @@ class TaskController extends Controller
             $this->notifyAssignees($task, $validated['assignees'], $request->user());
         }
 
+        $task->labels()->sync($validated['label_ids'] ?? []);
+
         return Redirect::route('projects.tasks.index', $project->uuid)
             ->with('success', 'Tarea creada con éxito.');
     }
@@ -131,13 +141,15 @@ class TaskController extends Controller
     {
         Gate::authorize('view', $project);
 
-        $task->load('assignees');
+        $task->load(['assignees', 'labels']);
         $members = $project->users()->get(['users.id', 'users.name', 'users.uuid']);
+        $labels  = $project->labels()->orderBy('name')->get();
 
         return Inertia::render('Tasks/Edit', [
             'project' => $project,
             'task'    => $task,
             'members' => $members,
+            'labels'  => $labels,
         ]);
     }
 
@@ -155,6 +167,8 @@ class TaskController extends Controller
             'meeting_url'     => 'nullable|url',
             'assignees'       => 'nullable|array',
             'assignees.*'     => 'integer|exists:users,id',
+            'label_ids'       => 'nullable|array',
+            'label_ids.*'     => 'integer|exists:labels,id',
         ]);
 
         $previousAssigneeIds = $task->assignees()->pluck('users.id')->toArray();
@@ -162,6 +176,7 @@ class TaskController extends Controller
         $task->load('project');
         $newAssigneeIds = $validated['assignees'] ?? [];
         $task->assignees()->sync($newAssigneeIds);
+        $task->labels()->sync($validated['label_ids'] ?? []);
 
         // Notify only newly added assignees
         $addedIds = array_diff($newAssigneeIds, $previousAssigneeIds);
@@ -191,7 +206,28 @@ class TaskController extends Controller
             'status' => 'required|string|in:todo,in_progress,in_review,done,cancelled',
         ]);
 
+        $previousStatus = $task->status;
         $task->update($validated);
+
+        if ($previousStatus !== $validated['status']) {
+            $task->load('project');
+            $assignees = $task->assignees()
+                ->where('users.id', '!=', $request->user()->id)
+                ->get();
+
+            foreach ($assignees as $assignee) {
+                NotificationService::send(
+                    $assignee->id,
+                    'status_changed',
+                    "{$request->user()->name} cambió el estado de \"{$task->title}\"",
+                    "{$previousStatus} → {$validated['status']}",
+                    route('projects.tasks.show', [$project->uuid, $task->uuid])
+                );
+                Mail::to($assignee->email)->queue(
+                    new TaskStatusChanged($task, $assignee, $previousStatus, $request->user())
+                );
+            }
+        }
 
         return back()->with('success', 'Estado actualizado.');
     }
