@@ -36,7 +36,8 @@ class UpdateUserRequest extends FormRequest
             'email.unique'   => 'Este correo ya está en uso.',
             'role.required'  => 'El rol es obligatorio.',
             'role.exists'    => 'El rol seleccionado no existe.',
-            'password.min'   => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
         ];
     }
 }

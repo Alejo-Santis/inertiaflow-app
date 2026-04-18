@@ -23,9 +23,8 @@
 
   let showPasswordSection = false;
 
-  const submit = async (event: Event) => {
-    event.preventDefault();
-    await $form.put(route('admin.users.update', user.uuid));
+  const submit = () => {
+    $form.put(route('admin.users.update', user.uuid));
   };
 </script>
 
@@ -144,7 +143,9 @@
                   autocomplete="new-password"
                   placeholder="Repite la contraseña"
                   bind:value={$form.password_confirmation}
-                  class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+                  class="mt-1.5 block w-full rounded-xl border py-2.5 px-3.5 text-sm shadow-sm transition
+                    {$form.errors.password ? 'border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-indigo-500'}
+                    focus:outline-none focus:ring-2 focus:ring-offset-0"
                 />
               </div>
             </div>
