@@ -73,6 +73,8 @@ class OrganizationController extends Controller
     {
         $data = $request->validate([
             'name'        => 'required|string|max:255',
+            'nit'         => 'required|string|max:20|unique:organizations,nit',
+            'dv'          => 'required|string|max:1',
             'description' => 'nullable|string',
             'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
@@ -109,6 +111,8 @@ class OrganizationController extends Controller
 
         $data = $request->validate([
             'name'        => 'required|string|max:255',
+            'nit'         => 'required|string|max:20|unique:organizations,nit,' . $organization->id,
+            'dv'          => 'required|string|max:1',
             'description' => 'nullable|string',
             'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);

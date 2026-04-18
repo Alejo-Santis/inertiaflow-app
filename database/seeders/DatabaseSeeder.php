@@ -9,6 +9,7 @@ use App\Models\OrganizationMember;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Ramsey\Uuid\Uuid;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,11 +25,11 @@ class DatabaseSeeder extends Seeder
 
         // Usuario inicial
         $admin = User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@inertiaflow.com'],
             [
                 'name' => 'Admin',
-                'password' => bcrypt('password'),
-                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'password' => bcrypt('Superadmin123.'),
+                'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
 
@@ -41,53 +42,55 @@ class DatabaseSeeder extends Seeder
 
         // Usuarios de demostración
         $manager = User::updateOrCreate(
-            ['email' => 'manager@example.com'],
+            ['email' => 'alvaro.dimas@inertiaflow.com'],
             [
-                'name' => 'Demo Manager',
-                'password' => bcrypt('password'),
-                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => 'Alvaro Dimas',
+                'password' => bcrypt('Password123.'),
+                'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
         $manager->assignRole('manager');
 
         $techLead = User::updateOrCreate(
-            ['email' => 'techlead@example.com'],
+            ['email' => 'techlead@inertiaflow.com'],
             [
-                'name' => 'Tech Lead',
-                'password' => bcrypt('password'),
-                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => 'Alejandro Santis',
+                'password' => bcrypt('Password123.'),
+                'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
         $techLead->assignRole('member');
 
         $dev1 = User::updateOrCreate(
-            ['email' => 'dev1@example.com'],
+            ['email' => 'alejandro.santis@inertiaflow.com'],
             [
-                'name' => 'Developer One',
-                'password' => bcrypt('password'),
-                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => 'Alejandro Santis',
+                'password' => bcrypt('Password123.'),
+                'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
         $dev1->assignRole('member');
 
         $dev2 = User::updateOrCreate(
-            ['email' => 'dev2@example.com'],
+            ['email' => 'ivan.hernandez@inertiaflow.com'],
             [
-                'name' => 'Developer Two',
-                'password' => bcrypt('password'),
-                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => 'Ivan Hernandez',
+                'password' => bcrypt('Password123.'),
+                'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
         $dev2->assignRole('member');
 
         // Organización de demostración
         $org = Organization::updateOrCreate(
-            ['slug' => 'acme-tech'],
+            ['slug' => 'nextpyme-colombia-sas'],
             [
                 'owner_id'    => $admin->id,
-                'name'        => 'ACME Tech',
-                'description' => 'Organización de demostración',
-                'uuid'        => (string) \Illuminate\Support\Str::uuid(),
+                'nit'         => '901249232',
+                'dv'          => '0',
+                'name'        => 'Nextpyme Colombia S.A.S.',
+                'description' => 'Empresa dedicada a brindar soluciones tecnológicas para pequeñas y medianas empresas en Colombia.',
+                'uuid'        => (string) Uuid::uuid4()->toString(),
             ]
         );
 
@@ -120,7 +123,7 @@ class DatabaseSeeder extends Seeder
                 'lead_id'     => $manager->id,
                 'description' => 'Equipo de desarrollo de software',
                 'color'       => '#6366f1',
-                'uuid'        => (string) \Illuminate\Support\Str::uuid(),
+                'uuid'        => (string) Uuid::uuid4()->toString(),
             ]
         );
 

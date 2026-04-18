@@ -12,6 +12,8 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->string('nit')->unique();
+            $table->string('dv')->nullable();
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();

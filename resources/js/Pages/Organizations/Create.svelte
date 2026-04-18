@@ -2,6 +2,7 @@
   import Layout from '../Layout.svelte';
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
+  import { calcDV } from '../../lib/nitDV';
 
   const colorPresets = [
     '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
@@ -9,7 +10,13 @@
     '#3b82f6', '#14b8a6', '#64748b', '#1e293b',
   ];
 
-  const form = useForm({ name: '', description: '', color: '#6366f1' });
+  const form = useForm({ name: '', nit: '', dv: '', description: '', color: '#6366f1' });
+
+  function onNitInput() {
+    // Solo dígitos en el campo NIT
+    $form.nit = $form.nit.replace(/\D/g, '');
+    $form.dv  = calcDV($form.nit);
+  }
 
   function submit() {
     $form.post(route('organizations.store'));
@@ -34,11 +41,14 @@
       </div>
 
       <div class="space-y-5 p-6">
+
+        <!-- Nombre -->
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">
+          <label for="org-name" class="mb-1.5 block text-sm font-medium text-slate-700">
             Nombre de la organización *
           </label>
           <input
+            id="org-name"
             bind:value={$form.name}
             type="text"
             placeholder="Ej: ACME Tech, Startup Labs…"
@@ -49,9 +59,51 @@
           {/if}
         </div>
 
+        <!-- NIT + DV -->
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Descripción</label>
+          <label for="org-nit" class="mb-1.5 block text-sm font-medium text-slate-700">
+            NIT *
+            <span class="ml-1 text-[10px] font-normal text-slate-400">(sin dígito de verificación)</span>
+          </label>
+          <div class="flex items-start gap-3">
+            <div class="flex-1">
+              <input
+                id="org-nit"
+                bind:value={$form.nit}
+                oninput={onNitInput}
+                type="text"
+                inputmode="numeric"
+                maxlength="15"
+                placeholder="Ej: 901249232"
+                class="w-full rounded-xl border border-slate-300 py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {#if $form.errors.nit}
+                <p class="mt-1 text-xs text-rose-600">{$form.errors.nit}</p>
+              {/if}
+            </div>
+
+            <div class="w-24 shrink-0">
+              <label for="org-dv" class="mb-1.5 block text-[11px] font-medium text-slate-500">DV</label>
+              <input
+                id="org-dv"
+                value={$form.dv}
+                type="text"
+                disabled
+                placeholder="—"
+                class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-center text-sm font-bold text-slate-700 cursor-not-allowed"
+              />
+            </div>
+          </div>
+          <p class="mt-1.5 text-[11px] text-slate-400">
+            El dígito de verificación se calcula automáticamente según el algoritmo DIAN.
+          </p>
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <label for="org-description" class="mb-1.5 block text-sm font-medium text-slate-700">Descripción</label>
           <textarea
+            id="org-description"
             bind:value={$form.description}
             rows="3"
             placeholder="¿Qué hace esta organización?…"
@@ -59,8 +111,9 @@
           ></textarea>
         </div>
 
+        <!-- Color -->
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-slate-700">Color de la organización</label>
+          <label for="org-color-picker" class="mb-1.5 block text-sm font-medium text-slate-700">Color de la organización</label>
           <div class="flex flex-wrap items-center gap-2">
             {#each colorPresets as preset}
               <button
@@ -73,6 +126,7 @@
               ></button>
             {/each}
             <input
+              id="org-color-picker"
               type="color"
               bind:value={$form.color}
               class="h-7 w-7 cursor-pointer rounded-lg border-2 border-slate-300 p-0 shadow-sm"
@@ -84,6 +138,7 @@
             </span>
           </div>
         </div>
+
       </div>
 
       <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
@@ -93,7 +148,7 @@
         >Cancelar</Link>
         <button
           onclick={submit}
-          disabled={!$form.name || $form.processing}
+          disabled={!$form.name || !$form.nit || $form.processing}
           class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50"
         >
           {#if $form.processing}
