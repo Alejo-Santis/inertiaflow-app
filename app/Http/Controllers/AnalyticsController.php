@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
@@ -24,12 +25,12 @@ class AnalyticsController extends Controller
 
         // Stats globales
         $totalTasks    = Task::whereIn('project_id', $projectIds)->count();
-        $doneTasks     = Task::whereIn('project_id', $projectIds)->where('status', 'done')->count();
+        $doneTasks     = Task::whereIn('project_id', $projectIds)->where('status', TaskStatus::Done->value)->count();
         $overdueTasks  = Task::whereIn('project_id', $projectIds)
-            ->whereNotIn('status', ['done', 'cancelled'])
+            ->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])
             ->whereDate('due_date', '<', today())
             ->count();
-        $cancelledTasks = Task::whereIn('project_id', $projectIds)->where('status', 'cancelled')->count();
+        $cancelledTasks = Task::whereIn('project_id', $projectIds)->where('status', TaskStatus::Cancelled->value)->count();
 
         // Tareas por estado
         $byStatus = Task::whereIn('project_id', $projectIds)
@@ -48,9 +49,9 @@ class AnalyticsController extends Controller
         $projects = Project::whereIn('id', $projectIds)
             ->withCount([
                 'tasks',
-                'tasks as done_tasks_count'      => fn ($q) => $q->where('status', 'done'),
-                'tasks as overdue_tasks_count'   => fn ($q) => $q->whereNotIn('status', ['done','cancelled'])->whereDate('due_date', '<', today()),
-                'tasks as inprogress_tasks_count'=> fn ($q) => $q->where('status', 'in_progress'),
+                'tasks as done_tasks_count'      => fn ($q) => $q->where('status', TaskStatus::Done->value),
+                'tasks as overdue_tasks_count'   => fn ($q) => $q->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])->whereDate('due_date', '<', today()),
+                'tasks as inprogress_tasks_count'=> fn ($q) => $q->where('status', TaskStatus::InProgress->value),
             ])
             ->orderByDesc('tasks_count')
             ->get(['id', 'name', 'color', 'status', 'uuid']);

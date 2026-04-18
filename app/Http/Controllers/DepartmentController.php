@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DeptMemberRole;
+use App\Http\Requests\Department\StoreDepartmentRequest;
+use App\Http\Requests\Department\UpdateDepartmentRequest;
 use App\Models\Department;
 use App\Models\DepartmentMember;
 use App\Models\Organization;
@@ -40,16 +43,11 @@ class DepartmentController extends Controller
         ]);
     }
 
-    public function store(Request $request, Organization $organization)
+    public function store(StoreDepartmentRequest $request, Organization $organization)
     {
         $this->authorizeManage($organization);
 
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'lead_id'     => 'nullable|exists:users,id',
-        ]);
+        $data = $request->validated();
 
         $data['organization_id'] = $organization->id;
         $data['color']           = $data['color'] ?? '#6366f1';
@@ -60,7 +58,7 @@ class DepartmentController extends Controller
         if (!empty($data['lead_id'])) {
             DepartmentMember::firstOrCreate(
                 ['department_id' => $department->id, 'user_id' => $data['lead_id']],
-                ['role' => DepartmentMember::ROLE_TEAM_LEAD]
+                ['role' => DeptMemberRole::TeamLead]
             );
         }
 
@@ -68,17 +66,12 @@ class DepartmentController extends Controller
             ->with('success', 'Departamento creado exitosamente.');
     }
 
-    public function update(Request $request, Organization $organization, Department $department)
+    public function update(UpdateDepartmentRequest $request, Organization $organization, Department $department)
     {
         $this->authorizeManage($organization);
         abort_if($department->organization_id !== $organization->id, 404);
 
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'lead_id'     => 'nullable|exists:users,id',
-        ]);
+        $data = $request->validated();
 
         $department->update($data);
 

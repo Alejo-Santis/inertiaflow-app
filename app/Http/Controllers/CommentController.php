@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\Comment\StoreCommentRequest;
 use App\Mail\CommentAdded;
 use App\Models\Comment;
 use App\Models\Project;
@@ -16,13 +18,11 @@ use Illuminate\Support\Facades\Mail;
 
 class CommentController extends Controller
 {
-    public function store(Request $request, Project $project, Task $task)
+    public function store(StoreCommentRequest $request, Project $project, Task $task)
     {
         Gate::authorize('view', $project);
 
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
         $comment = $task->comments()->create([
             'user_id' => $request->user()->id,
@@ -79,7 +79,7 @@ class CommentController extends Controller
 
     public function destroy(Project $project, Task $task, Comment $comment)
     {
-        if ($comment->user_id !== Auth::id() && ! FacadesAuth::user()->hasRole('admin')) {
+        if ($comment->user_id !== Auth::id() && ! FacadesAuth::user()->hasRole(GlobalRole::Admin->value)) {
             abort(403, 'No puedes eliminar este comentario.');
         }
 

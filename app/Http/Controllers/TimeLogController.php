@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\TimeLog\StoreTimeLogRequest;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TimeLog;
@@ -10,15 +12,11 @@ use Illuminate\Support\Facades\Gate;
 
 class TimeLogController extends Controller
 {
-    public function store(Request $request, Project $project, Task $task)
+    public function store(StoreTimeLogRequest $request, Project $project, Task $task)
     {
         Gate::authorize('view', $project);
 
-        $validated = $request->validate([
-            'hours'       => 'required|numeric|min:0.25|max:24',
-            'description' => 'nullable|string|max:255',
-            'logged_date' => 'required|date',
-        ]);
+        $validated = $request->validated();
 
         $task->timeLogs()->create([
             'user_id'     => $request->user()->id,
@@ -34,7 +32,7 @@ class TimeLogController extends Controller
     {
         Gate::authorize('view', $project);
 
-        if ($timeLog->user_id !== auth()->id() && ! auth()->user()->hasRole('admin')) {
+        if ($timeLog->user_id !== auth()->id() && ! auth()->user()->hasRole(GlobalRole::Admin->value)) {
             abort(403);
         }
 

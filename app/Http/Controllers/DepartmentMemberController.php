@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DeptMember\StoreDeptMemberRequest;
+use App\Http\Requests\DeptMember\UpdateDeptMemberRequest;
 use App\Models\Department;
 use App\Models\DepartmentMember;
 use App\Models\Organization;
@@ -11,15 +13,12 @@ use Illuminate\Http\Request;
 
 class DepartmentMemberController extends Controller
 {
-    public function store(Request $request, Organization $organization, Department $department)
+    public function store(StoreDeptMemberRequest $request, Organization $organization, Department $department)
     {
         $this->authorizeManage($organization);
         abort_if($department->organization_id !== $organization->id, 404);
 
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role'    => 'required|in:' . implode(',', DepartmentMember::roles()),
-        ]);
+        $validated = $request->validated();
 
         // El usuario debe ser miembro de la organización primero
         if (! $organization->members()->where('user_id', $validated['user_id'])->exists()) {
@@ -39,14 +38,12 @@ class DepartmentMemberController extends Controller
         return back()->with('success', 'Miembro agregado al departamento.');
     }
 
-    public function update(Request $request, Organization $organization, Department $department, User $user)
+    public function update(UpdateDeptMemberRequest $request, Organization $organization, Department $department, User $user)
     {
         $this->authorizeManage($organization);
         abort_if($department->organization_id !== $organization->id, 404);
 
-        $validated = $request->validate([
-            'role' => 'required|in:' . implode(',', DepartmentMember::roles()),
-        ]);
+        $validated = $request->validated();
 
         $member = $department->members()->where('user_id', $user->id)->firstOrFail();
         $member->update(['role' => $validated['role']]);

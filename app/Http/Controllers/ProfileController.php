@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Profile\UpdateAvatarRequest;
+use App\Http\Requests\Profile\UpdatePasswordRequest;
+use App\Http\Requests\Profile\UpdateProfileRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -19,26 +22,15 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-        ]);
-
-        $user->update($validated);
+        $request->user()->update($request->validated());
 
         return back()->with('success', 'Perfil actualizado.');
     }
 
-    public function updateAvatar(Request $request)
+    public function updateAvatar(UpdateAvatarRequest $request)
     {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,gif,webp|max:2048',
-        ]);
-
         $user = $request->user();
 
         if ($user->avatar_path) {
@@ -63,13 +55,8 @@ class ProfileController extends Controller
         return back()->with('success', 'Foto de perfil eliminada.');
     }
 
-    public function updatePassword(Request $request)
+    public function updatePassword(UpdatePasswordRequest $request)
     {
-        $request->validate([
-            'current_password' => 'required|current_password',
-            'password'         => ['required', 'confirmed', Password::min(8)],
-        ]);
-
         $request->user()->update([
             'password' => Hash::make($request->password),
         ]);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Meeting\StoreMeetingRequest;
+use App\Http\Requests\Meeting\UpdateMeetingRequest;
 use App\Models\Meeting;
 use App\Models\Project;
 use App\Models\User;
@@ -37,19 +39,9 @@ class MeetingController extends Controller
         return Inertia::render('Meetings/Index', compact('todayList', 'upcoming', 'past', 'projects', 'users'));
     }
 
-    public function store(Request $request)
+    public function store(StoreMeetingRequest $request)
     {
-        $data = $request->validate([
-            'title'            => 'required|string|max:255',
-            'description'      => 'nullable|string',
-            'meeting_url'      => 'nullable|url',
-            'platform'         => 'nullable|string|in:zoom,meet,teams,other',
-            'scheduled_at'     => 'required|date',
-            'duration_minutes' => 'required|integer|min:5|max:480',
-            'project_id'       => 'nullable|exists:projects,id',
-            'participants'     => 'nullable|array',
-            'participants.*'   => 'integer|exists:users,id',
-        ]);
+        $data = $request->validated();
 
         $data['organizer_id'] = $request->user()->id;
         $meeting = Meeting::create($data);
@@ -64,21 +56,11 @@ class MeetingController extends Controller
         return Redirect::route('meetings.index')->with('success', 'Reunión creada.');
     }
 
-    public function update(Request $request, Meeting $meeting)
+    public function update(UpdateMeetingRequest $request, Meeting $meeting)
     {
         abort_if($meeting->organizer_id !== $request->user()->id, 403);
 
-        $data = $request->validate([
-            'title'            => 'required|string|max:255',
-            'description'      => 'nullable|string',
-            'meeting_url'      => 'nullable|url',
-            'platform'         => 'nullable|string|in:zoom,meet,teams,other',
-            'scheduled_at'     => 'required|date',
-            'duration_minutes' => 'required|integer|min:5|max:480',
-            'project_id'       => 'nullable|exists:projects,id',
-            'participants'     => 'nullable|array',
-            'participants.*'   => 'integer|exists:users,id',
-        ]);
+        $data = $request->validated();
 
         $meeting->update($data);
         $meeting->load('project');

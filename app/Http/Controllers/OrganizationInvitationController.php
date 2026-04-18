@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\Organization\StoreOrganizationInvitationRequest;
 use App\Mail\OrganizationInvitationMail;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -17,14 +19,11 @@ class OrganizationInvitationController extends Controller
     /**
      * Enviar invitación a un email (owner o admin de la org)
      */
-    public function store(Request $request, Organization $organization)
+    public function store(StoreOrganizationInvitationRequest $request, Organization $organization)
     {
         $this->authorizeManage($organization);
 
-        $validated = $request->validate([
-            'email' => 'required|email|max:255',
-            'role'  => 'required|in:' . implode(',', OrganizationMember::roles()),
-        ]);
+        $validated = $request->validated();
 
         // No invitar si ya es miembro
         $existingUser = User::where('email', $validated['email'])->first();
@@ -143,7 +142,7 @@ class OrganizationInvitationController extends Controller
         // para poder acceder a proyectos, tareas, etc. No se baja de rango
         // si ya es admin o manager.
         if ($user->getRoleNames()->isEmpty()) {
-            $user->assignRole('member');
+            $user->assignRole(GlobalRole::Member->value);
         }
 
         $invitation->update(['accepted_at' => now()]);

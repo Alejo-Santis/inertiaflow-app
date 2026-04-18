@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
+use App\Enums\GlobalRole;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -29,7 +30,7 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Gate::before(function ($user, $ability) {
-            if ($user->hasRole('admin')) {
+            if ($user->hasRole(GlobalRole::Admin->value)) {
                 return true;
             }
         });

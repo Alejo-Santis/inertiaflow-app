@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
+use App\Http\Requests\Task\StoreTaskRequest;
+use App\Http\Requests\Task\UpdateTaskRequest;
+use App\Http\Requests\Task\UpdateTaskStatusRequest;
 use App\Mail\TaskAssigned;
 use App\Mail\TaskStatusChanged;
 use App\Models\Project;
@@ -28,12 +32,18 @@ class TaskController extends Controller
             $query->where('priority', $priority);
         }
 
+        $ip  = TaskStatus::InProgress->value;
+        $ir  = TaskStatus::InReview->value;
+        $td  = TaskStatus::Todo->value;
+        $dn  = TaskStatus::Done->value;
+        $can = TaskStatus::Cancelled->value;
+
         $tasks = $query->orderByRaw("CASE status
-            WHEN 'in_progress' THEN 1
-            WHEN 'in_review'   THEN 2
-            WHEN 'todo'        THEN 3
-            WHEN 'done'        THEN 4
-            WHEN 'cancelled'   THEN 5
+            WHEN '{$ip}'  THEN 1
+            WHEN '{$ir}'  THEN 2
+            WHEN '{$td}'  THEN 3
+            WHEN '{$dn}'  THEN 4
+            WHEN '{$can}' THEN 5
             ELSE 6 END")
             ->orderBy('priority', 'desc')
             ->paginate(20);
@@ -102,23 +112,11 @@ class TaskController extends Controller
         ]);
     }
 
-    public function store(Request $request, Project $project)
+    public function store(StoreTaskRequest $request, Project $project)
     {
         Gate::authorize('create', Task::class);
 
-        $validated = $request->validate([
-            'title'           => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'priority'        => 'required|integer|between:1,4',
-            'due_date'        => 'nullable|date|after_or_equal:today',
-            'status'          => 'required|string|in:todo,in_progress,in_review,done,cancelled',
-            'estimated_hours' => 'nullable|numeric|min:0',
-            'meeting_url'     => 'nullable|url',
-            'assignees'       => 'nullable|array',
-            'assignees.*'     => 'integer|exists:users,id',
-            'label_ids'       => 'nullable|array',
-            'label_ids.*'     => 'integer|exists:labels,id',
-        ]);
+        $validated = $request->validated();
 
         $validated['project_id'] = $project->id;
         $validated['created_by'] = $request->user()->id;
@@ -153,23 +151,11 @@ class TaskController extends Controller
         ]);
     }
 
-    public function update(Request $request, Project $project, Task $task)
+    public function update(UpdateTaskRequest $request, Project $project, Task $task)
     {
         Gate::authorize('view', $project);
 
-        $validated = $request->validate([
-            'title'           => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'priority'        => 'required|integer|between:1,4',
-            'due_date'        => 'nullable|date',
-            'status'          => 'required|string|in:todo,in_progress,in_review,done,cancelled',
-            'estimated_hours' => 'nullable|numeric|min:0',
-            'meeting_url'     => 'nullable|url',
-            'assignees'       => 'nullable|array',
-            'assignees.*'     => 'integer|exists:users,id',
-            'label_ids'       => 'nullable|array',
-            'label_ids.*'     => 'integer|exists:labels,id',
-        ]);
+        $validated = $request->validated();
 
         $previousAssigneeIds = $task->assignees()->pluck('users.id')->toArray();
         $task->update($validated);
@@ -198,13 +184,11 @@ class TaskController extends Controller
             ->with('success', 'Tarea eliminada.');
     }
 
-    public function updateStatus(Request $request, Project $project, Task $task)
+    public function updateStatus(UpdateTaskStatusRequest $request, Project $project, Task $task)
     {
         Gate::authorize('view', $project);
 
-        $validated = $request->validate([
-            'status' => 'required|string|in:todo,in_progress,in_review,done,cancelled',
-        ]);
+        $validated = $request->validated();
 
         $previousStatus = $task->status;
         $task->update($validated);

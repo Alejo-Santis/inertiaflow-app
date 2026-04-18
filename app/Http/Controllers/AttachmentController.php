@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\Attachment\StoreAttachmentRequest;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskAttachment;
@@ -12,13 +14,9 @@ use Illuminate\Support\Str;
 
 class AttachmentController extends Controller
 {
-    public function store(Request $request, Project $project, Task $task)
+    public function store(StoreAttachmentRequest $request, Project $project, Task $task)
     {
         Gate::authorize('view', $project);
-
-        $request->validate([
-            'file' => 'required|file|max:20480', // 20 MB
-        ]);
 
         $file        = $request->file('file');
         $storedName  = Str::uuid() . '.' . $file->getClientOriginalExtension();
@@ -42,7 +40,7 @@ class AttachmentController extends Controller
         abort_if($attachment->task_id !== $task->id, 404);
 
         // Solo el dueño o admin puede eliminar
-        if ($attachment->user_id !== $request->user()->id && ! $request->user()->hasRole('admin')) {
+        if ($attachment->user_id !== $request->user()->id && ! $request->user()->hasRole(GlobalRole::Admin->value)) {
             abort(403);
         }
 

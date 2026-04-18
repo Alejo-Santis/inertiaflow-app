@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DeptMemberRole;
+use App\Enums\GlobalRole;
 use App\Enums\OrgMemberRole;
 use App\Models\Department;
 use App\Models\DepartmentMember;
@@ -39,7 +41,7 @@ class DatabaseSeeder extends Seeder
         \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'manager']);
         \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'member']);
 
-        $admin->assignRole('admin');
+        $admin->assignRole(GlobalRole::Admin->value);
 
         // Usuarios de demostración
         $manager = User::updateOrCreate(
@@ -50,7 +52,7 @@ class DatabaseSeeder extends Seeder
                 'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
-        $manager->assignRole('manager');
+        $manager->assignRole(GlobalRole::Manager->value);
 
         $techLead = User::updateOrCreate(
             ['email' => 'leider.guzmane@inertiaflow.com'],
@@ -60,7 +62,7 @@ class DatabaseSeeder extends Seeder
                 'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
-        $techLead->assignRole('member');
+        $techLead->assignRole(GlobalRole::Member->value);
 
         $dev1 = User::updateOrCreate(
             ['email' => 'alejandro.santis@inertiaflow.com'],
@@ -70,7 +72,7 @@ class DatabaseSeeder extends Seeder
                 'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
-        $dev1->assignRole('member');
+        $dev1->assignRole(GlobalRole::Member->value);
 
         $dev2 = User::updateOrCreate(
             ['email' => 'ivan.hernandez@inertiaflow.com'],
@@ -80,7 +82,7 @@ class DatabaseSeeder extends Seeder
                 'uuid' => (string) Uuid::uuid4()->toString(),
             ]
         );
-        $dev2->assignRole('member');
+        $dev2->assignRole(GlobalRole::Member->value);
 
         // Organización de demostración
         $org = Organization::updateOrCreate(
@@ -91,6 +93,7 @@ class DatabaseSeeder extends Seeder
                 'dv'          => '0',
                 'name'        => 'Nextpyme Colombia S.A.S.',
                 'description' => 'Empresa dedicada a brindar soluciones tecnológicas para pequeñas y medianas empresas en Colombia.',
+                'color'       => '#6366f1',
                 'uuid'        => (string) Uuid::uuid4()->toString(),
             ]
         );
@@ -131,19 +134,19 @@ class DatabaseSeeder extends Seeder
         // Jerarquía del departamento
         DepartmentMember::updateOrCreate(
             ['department_id' => $dept->id, 'user_id' => $manager->id],
-            ['role' => DepartmentMember::ROLE_TEAM_LEAD]
+            ['role' => DeptMemberRole::TeamLead]
         );
         DepartmentMember::updateOrCreate(
             ['department_id' => $dept->id, 'user_id' => $techLead->id],
-            ['role' => DepartmentMember::ROLE_TECH_LEAD]
+            ['role' => DeptMemberRole::TechLead]
         );
         DepartmentMember::updateOrCreate(
             ['department_id' => $dept->id, 'user_id' => $dev1->id],
-            ['role' => DepartmentMember::ROLE_SENIOR]
+            ['role' => DeptMemberRole::Senior]
         );
         DepartmentMember::updateOrCreate(
             ['department_id' => $dept->id, 'user_id' => $dev2->id],
-            ['role' => DepartmentMember::ROLE_MEMBER]
+            ['role' => DeptMemberRole::Member]
         );
     }
 }

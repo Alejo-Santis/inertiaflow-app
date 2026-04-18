@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\TaskStatus;
 use App\Models\Task;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
@@ -18,7 +19,7 @@ class SendTaskReminders extends Command
 
         // Tareas que vencen hoy
         $dueToday = Task::whereDate('due_date', $today)
-            ->whereNotIn('status', ['done', 'cancelled'])
+            ->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])
             ->with(['assignees', 'project:id,uuid,name'])
             ->get();
 
@@ -36,7 +37,7 @@ class SendTaskReminders extends Command
 
         // Tareas que vencen mañana
         $dueTomorrow = Task::whereDate('due_date', $tomorrow)
-            ->whereNotIn('status', ['done', 'cancelled'])
+            ->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])
             ->with(['assignees', 'project:id,uuid,name'])
             ->get();
 
@@ -54,7 +55,7 @@ class SendTaskReminders extends Command
 
         // Tareas ya vencidas (notificar una vez al día)
         $overdue = Task::whereDate('due_date', '<', $today)
-            ->whereNotIn('status', ['done', 'cancelled'])
+            ->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])
             ->with(['assignees', 'project:id,uuid,name'])
             ->get();
 

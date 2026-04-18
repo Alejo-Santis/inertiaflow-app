@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
+use App\Http\Requests\Project\StoreProjectRequest;
+use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -21,7 +24,7 @@ class ProjectController extends Controller
         $projects = Project::with(['owner:id,name,uuid', 'organization:id,name,color,uuid'])
             ->withCount([
                 'tasks',
-                'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'done'),
+                'tasks as done_tasks_count' => fn ($q) => $q->where('status', TaskStatus::Done->value),
                 'users as members_count',
             ])
             ->where(function ($q) use ($user, $orgIds) {
@@ -43,7 +46,7 @@ class ProjectController extends Controller
 
         $project->loadCount([
             'tasks',
-            'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'done'),
+            'tasks as done_tasks_count' => fn ($q) => $q->where('status', TaskStatus::Done->value),
         ]);
 
         $members   = $project->users()->with('roles')->get();
@@ -86,22 +89,11 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
         Gate::authorize('create', Project::class);
 
-        $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'start_date'      => 'nullable|date',
-            'end_date'        => 'nullable|date|after_or_equal:start_date',
-            'status'          => 'required|string|in:active,on_hold,completed,cancelled',
-            'color'           => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'priority'        => 'required|string|in:low,medium,high',
-            'deadline'        => 'nullable|date',
-            'organization_id' => 'nullable|exists:organizations,id',
-            'department_id'   => 'nullable|exists:departments,id',
-        ]);
+        $data = $request->validated();
 
         $data['owner_id'] = $request->user()->id;
 
@@ -138,22 +130,11 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function update(Request $request, Project $project)
+    public function update(UpdateProjectRequest $request, Project $project)
     {
         Gate::authorize('view', $project);
 
-        $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'start_date'      => 'nullable|date',
-            'end_date'        => 'nullable|date|after_or_equal:start_date',
-            'status'          => 'required|string|in:active,on_hold,completed,cancelled',
-            'color'           => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'priority'        => 'required|string|in:low,medium,high',
-            'deadline'        => 'nullable|date',
-            'organization_id' => 'nullable|exists:organizations,id',
-            'department_id'   => 'nullable|exists:departments,id',
-        ]);
+        $data = $request->validated();
 
         $project->update($data);
 

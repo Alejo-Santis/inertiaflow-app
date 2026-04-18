@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\GlobalRole;
 use App\Models\Project;
 use App\Models\User;
 
@@ -9,7 +10,7 @@ class ProjectPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasRole('member');
+        return $user->hasRole(GlobalRole::Admin->value) || $user->hasRole(GlobalRole::Manager->value) || $user->hasRole(GlobalRole::Member->value);
     }
 
     public function view(User $user, Project $project): bool
@@ -34,16 +35,16 @@ class ProjectPolicy
     {
         // Cualquier usuario autenticado puede crear proyectos
         // (admin, manager y member del sistema)
-        return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasRole('member');
+        return $user->hasRole(GlobalRole::Admin->value) || $user->hasRole(GlobalRole::Manager->value) || $user->hasRole(GlobalRole::Member->value);
     }
 
     public function update(User $user, Project $project): bool
     {
-        return $project->owner_id === $user->id || $user->hasRole('admin');
+        return $project->owner_id === $user->id || $user->hasRole(GlobalRole::Admin->value);
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $project->owner_id === $user->id || $user->hasRole('admin');
+        return $project->owner_id === $user->id || $user->hasRole(GlobalRole::Admin->value);
     }
 }

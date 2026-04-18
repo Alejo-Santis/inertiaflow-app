@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
@@ -10,7 +11,7 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless($request->user()->hasRole('admin'), 403);
+        abort_unless($request->user()->hasRole(GlobalRole::Admin->value), 403);
 
         $logs = Activity::with('causer', 'subject')
             ->when($request->input('log_name'), fn($q, $v) => $q->where('log_name', $v))

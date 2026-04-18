@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\GlobalRole;
 use App\Models\Task;
 use App\Models\User;
 
@@ -9,7 +10,7 @@ class TaskPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasRole('member');
+        return $user->hasRole(GlobalRole::Admin->value) || $user->hasRole(GlobalRole::Manager->value) || $user->hasRole(GlobalRole::Member->value);
     }
 
     public function view(User $user, Task $task): bool
@@ -19,16 +20,16 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('manager');
+        return $user->hasRole(GlobalRole::Admin->value) || $user->hasRole(GlobalRole::Manager->value);
     }
 
     public function update(User $user, Task $task): bool
     {
-        return $task->created_by === $user->id || $user->hasRole('admin');
+        return $task->created_by === $user->id || $user->hasRole(GlobalRole::Admin->value);
     }
 
     public function delete(User $user, Task $task): bool
     {
-        return $task->created_by === $user->id || $user->hasRole('admin');
+        return $task->created_by === $user->id || $user->hasRole(GlobalRole::Admin->value);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\OrganizationMember;
@@ -44,7 +45,7 @@ class SearchController extends Controller
             ->get(['uuid', 'title', 'status', 'project_id']);
 
         // ── Organizaciones ────────────────────────────────────────────────────
-        $orgQuery = $user->hasRole('admin')
+        $orgQuery = $user->hasRole(GlobalRole::Admin->value)
             ? Organization::query()
             : Organization::whereHas('members', fn($q2) => $q2->where('user_id', $user->id));
 
@@ -53,7 +54,7 @@ class SearchController extends Controller
             ->limit(5)
             ->get(['uuid', 'name', 'description']);
 
-        $orgIds = $user->hasRole('admin')
+        $orgIds = $user->hasRole(GlobalRole::Admin->value)
             ? Organization::pluck('id')
             : OrganizationMember::where('user_id', $user->id)->pluck('organization_id');
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
@@ -66,7 +67,7 @@ class WorkloadController extends Controller
             'avatar_url' => $u->avatar_url,
         ]));
 
-        $organizations = $user->hasRole('admin')
+        $organizations = $user->hasRole(GlobalRole::Admin->value)
             ? Organization::orderBy('name')->get(['id', 'uuid', 'name', 'color'])
             : $user->organizations()->orderBy('name')->get(['organizations.id', 'organizations.uuid', 'organizations.name', 'organizations.color']);
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProjectRole;
+use App\Http\Requests\ProjectMember\StoreProjectMemberRequest;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -9,20 +11,18 @@ use Illuminate\Support\Facades\Gate;
 
 class ProjectMemberController extends Controller
 {
-    public function store(Request $request, Project $project)
+    public function store(StoreProjectMemberRequest $request, Project $project)
     {
         Gate::authorize('update', $project);
 
-        $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-        ]);
+        $validated = $request->validated();
 
         if ($project->users()->where('user_id', $validated['user_id'])->exists()) {
             return back()->with('error', 'El usuario ya es miembro de este proyecto.');
         }
 
         $project->users()->attach($validated['user_id'], [
-            'role'      => 'member',
+            'role'      => ProjectRole::Member->value,
             'joined_at' => now(),
         ]);
 

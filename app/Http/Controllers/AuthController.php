@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,12 +19,9 @@ class AuthController extends Controller
         return Inertia::render('Auth/Login');
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $credentials = $request->validated();
 
         if (Auth::attempt($credentials, $request->boolean('remember')) ) {
             $request->session()->regenerate();
@@ -38,13 +38,9 @@ class AuthController extends Controller
         return Inertia::render('Auth/Register');
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
             'name' => $validated['name'],
@@ -52,7 +48,7 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $user->assignRole('member');
+        $user->assignRole(GlobalRole::Member->value);
 
         Auth::login($user);
 

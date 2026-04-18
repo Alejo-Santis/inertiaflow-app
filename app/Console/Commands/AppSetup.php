@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\OrgMemberRole;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\OrganizationMember;
@@ -79,7 +80,7 @@ class AppSetup extends Command
 
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $admin->id],
-            ['role' => OrganizationMember::ROLE_OWNER]
+            ['role' => OrgMemberRole::Owner]
         );
 
         $this->line("        <fg=green>✓</> Organización <fg=yellow>{$orgName}</> creada.");

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectRole;
 use Illuminate\Database\Eloquent\Model;
 
 class ProjectMember extends Model
@@ -13,6 +14,11 @@ class ProjectMember extends Model
         'user_id',
         'role',
         'joined_at',
+    ];
+
+    protected $casts = [
+        'role'      => ProjectRole::class,
+        'joined_at' => 'datetime',
     ];
 
     public function project()

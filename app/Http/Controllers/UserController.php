@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +15,7 @@ class UserController extends Controller
 {
     private function ensureAdmin(): void
     {
-        if (! auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole(GlobalRole::Admin->value)) {
             abort(403, 'Solo los administradores pueden gestionar usuarios.');
         }
     }
@@ -41,16 +44,11 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
         $this->ensureAdmin();
 
-        $validated = $request->validate([
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
-            'role'                  => ['required', 'string', 'exists:roles,name'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
             'name'     => $validated['name'],
@@ -78,21 +76,11 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
         $this->ensureAdmin();
 
-        $rules = [
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', "unique:users,email,{$user->id}"],
-            'role'  => ['required', 'string', 'exists:roles,name'],
-        ];
-
-        if ($request->filled('password')) {
-            $rules['password'] = ['string', 'min:8', 'confirmed'];
-        }
-
-        $validated = $request->validate($rules);
+        $validated = $request->validated();
 
         $user->update([
             'name'  => $validated['name'],
