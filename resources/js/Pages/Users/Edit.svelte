@@ -3,9 +3,7 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let user: any;
-  export let roles: any[];
-  export let userRole: string;
+  let { user, roles, userRole }: { user: any; roles: any[]; userRole: string } = $props();
 
   const form = useForm({
     name:                  user.name,
@@ -21,13 +19,13 @@
     member:  { desc: 'Puede ver proyectos asignados y trabajar en sus tareas.',                       icon: '👤' },
   };
 
-  let showPasswordSection = false;
-  let showNewPwd          = false;
-  let showConfirmPwd      = false;
+  let showPasswordSection = $state(false);
+  let showNewPwd          = $state(false);
+  let showConfirmPwd      = $state(false);
 
-  $: pwdMismatch = $form.password.length > 0
+  let pwdMismatch = $derived($form.password.length > 0
     && $form.password_confirmation.length > 0
-    && $form.password !== $form.password_confirmation;
+    && $form.password !== $form.password_confirmation);
 
   const submit = () => {
     $form.put(route('admin.users.update', user.uuid));

@@ -4,18 +4,19 @@
   import { router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let workload: {
-    id: number; uuid: string; name: string; email: string;
-    avatar_url: string | null;
-    open_tasks: number; in_progress_tasks: number; in_review_tasks: number; todo_tasks: number;
-  }[];
+  let { workload, organizations, projects, filters }: {
+    workload: {
+      id: number; uuid: string; name: string; email: string;
+      avatar_url: string | null;
+      open_tasks: number; in_progress_tasks: number; in_review_tasks: number; todo_tasks: number;
+    }[];
+    organizations: { id: number; uuid: string; name: string; color: string }[];
+    projects: { id: number; uuid: string; name: string }[];
+    filters: { project_id?: string; org_id?: string };
+  } = $props();
 
-  export let organizations: { id: number; uuid: string; name: string; color: string }[];
-  export let projects: { id: number; uuid: string; name: string }[];
-  export let filters: { project_id?: string; org_id?: string };
-
-  let selectedProject = filters.project_id ?? '';
-  let selectedOrg     = filters.org_id ?? '';
+  let selectedProject = $state(filters.project_id ?? '');
+  let selectedOrg     = $state(filters.org_id ?? '');
 
   function applyFilters() {
     router.get(route('workload'), {
@@ -24,7 +25,7 @@
     }, { preserveState: true, replace: true });
   }
 
-  $: maxTasks = Math.max(...workload.map(u => u.open_tasks), 1);
+  let maxTasks = $derived(Math.max(...workload.map(u => u.open_tasks), 1));
 
   function barColor(count: number) {
     const ratio = count / maxTasks;

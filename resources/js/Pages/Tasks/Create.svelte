@@ -3,9 +3,7 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let members: any[] = [];
-  export let labels: { id: number; name: string; color: string }[] = [];
+  let { project, members = [], labels = [] }: { project: any; members?: any[]; labels?: { id: number; name: string; color: string }[] } = $props();
 
   const form = useForm({
     title: '',

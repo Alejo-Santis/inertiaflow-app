@@ -4,10 +4,7 @@
   import route from 'ziggy-js';
   import { useOrgAbilities, OrgActions } from '../../lib/orgCan';
 
-  export let organization: any;
-  export let department: any;
-  export let available: any[];
-  export let deptRoles: string[];
+  let { organization, department, available, deptRoles }: { organization: any; department: any; available: any[]; deptRoles: string[] } = $props();
 
   // Permisos del usuario en esta organización
   const can = useOrgAbilities(organization.uuid);
@@ -56,9 +53,9 @@
 
   // Ordenar miembros por jerarquía
   const roleOrder: Record<string, number> = { team_lead: 0, tech_lead: 1, senior: 2, member: 3 };
-  $: sortedMembers = [...(department.members ?? [])].sort(
+  let sortedMembers = $derived([...(department.members ?? [])].sort(
     (a, b) => (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99)
-  );
+  ));
 </script>
 
 <Layout title={department.name}>

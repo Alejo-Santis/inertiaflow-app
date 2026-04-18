@@ -3,9 +3,7 @@
   import { Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let projects: any;
-  export let user: any;
-  export let organizations: any[] = [];
+  let { projects, user, organizations = [] }: { projects: any; user: any; organizations?: any[] } = $props();
 
   const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
     active:    { label: 'Activo',     color: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',  dot: 'bg-emerald-500' },
@@ -18,9 +16,9 @@
     return statusConfig[status] ?? { label: status, color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' };
   }
 
-  $: totalProjects = projects?.total ?? 0;
-  $: activeProjects = projects?.data?.filter((p: any) => p.status === 'active').length ?? 0;
-  $: completedProjects = projects?.data?.filter((p: any) => p.status === 'completed').length ?? 0;
+  let totalProjects = $derived(projects?.total ?? 0);
+  let activeProjects = $derived(projects?.data?.filter((p: any) => p.status === 'active').length ?? 0);
+  let completedProjects = $derived(projects?.data?.filter((p: any) => p.status === 'completed').length ?? 0);
 
   const greeting = (() => {
     const h = new Date().getHours();

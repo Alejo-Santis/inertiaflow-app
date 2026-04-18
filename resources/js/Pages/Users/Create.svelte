@@ -3,7 +3,7 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let roles: any[];
+  let { roles }: { roles: any[] } = $props();
 
   const form = useForm({
     name: '',
@@ -19,10 +19,9 @@
     member:  { desc: 'Puede ver proyectos asignados y trabajar en sus tareas.',                       icon: '👤' },
   };
 
-  $: selectedRoleInfo = roleInfo[$form.role] ?? { desc: '', icon: '👤' };
+  let selectedRoleInfo = $derived(roleInfo[$form.role] ?? { desc: '', icon: '👤' });
 
-  const submit = async (event: Event) => {
-    event.preventDefault();
+  const submit = async () => {
     await $form.post(route('admin.users.store'), {
       onSuccess: () => $form.reset(),
     });

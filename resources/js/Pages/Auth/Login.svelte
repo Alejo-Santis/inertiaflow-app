@@ -8,7 +8,7 @@
     remember: false,
   });
 
-  let showPassword = false;
+  let showPassword = $state(false);
 
   const submit = async () => {
     await $form.post(route('login'), {

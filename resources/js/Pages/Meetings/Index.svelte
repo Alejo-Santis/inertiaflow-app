@@ -3,18 +3,16 @@
   import { Link, useForm, router, usePage } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let todayList: any[];
-  export let upcoming:  any[];
-  export let past:      any[];
-  export let projects:  any[];
-  export let users:     any[];
+  let { todayList, upcoming, past, projects, users }: {
+    todayList: any[]; upcoming: any[]; past: any[]; projects: any[]; users: any[];
+  } = $props();
 
   const page = usePage();
-  $: me = ($page.props.auth as any)?.user;
+  let me = $derived(($page.props.auth as any)?.user);
 
   // ── Create / Edit form ──────────────────────────────────────────────────
-  let showForm    = false;
-  let editTarget: any = null;
+  let showForm    = $state(false);
+  let editTarget: any = $state(null);
 
   const emptyForm = () => ({
     title: '', description: '', meeting_url: '', platform: 'meet',

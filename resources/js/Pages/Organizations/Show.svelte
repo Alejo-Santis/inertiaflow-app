@@ -4,10 +4,7 @@
   import route from 'ziggy-js';
   import { useOrgAbilities, OrgActions } from '../../lib/orgCan';
 
-  export let organization: any;
-  export let available: any[];
-  export let orgRoles: string[];
-  export let pendingInvitations: any[] = [];
+  let { organization, available, orgRoles, pendingInvitations = [] }: { organization: any; available: any[]; orgRoles: string[]; pendingInvitations?: any[] } = $props();
 
   // Permisos del usuario actual en esta org
   const can = useOrgAbilities(organization.uuid);
@@ -45,7 +42,7 @@
   };
 
   // Modal de nuevo departamento
-  let deptModal = false;
+  let deptModal = $state(false);
   const deptForm = useForm({ name: '', description: '', color: '#6366f1', lead_id: '' });
 
   const createDept = () =>

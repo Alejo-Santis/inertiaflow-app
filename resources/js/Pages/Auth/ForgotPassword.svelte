@@ -2,7 +2,7 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let status: string = '';
+  let { status = '' }: { status?: string } = $props();
 
   const form = useForm({ email: '' });
 

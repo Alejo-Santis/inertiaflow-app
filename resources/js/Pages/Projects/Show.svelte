@@ -3,9 +3,7 @@
   import { Link, useForm, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let members: any[];
-  export let available: any[];
+  let { project, members, available, canManageMembers = false }: { project: any; members: any[]; available: any[]; canManageMembers?: boolean } = $props();
 
   const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
     active:    { label: 'Activo',     color: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', dot: 'bg-emerald-500' },
@@ -14,19 +12,19 @@
     cancelled: { label: 'Cancelado',  color: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200',     dot: 'bg-slate-400' },
   };
 
-  $: status = statusConfig[project.status] ?? { label: project.status, color: 'bg-slate-100', dot: 'bg-slate-400' };
+  let status = $derived(statusConfig[project.status] ?? { label: project.status, color: 'bg-slate-100', dot: 'bg-slate-400' });
 
   const priorityConfig: Record<string, { label: string; color: string; icon: string }> = {
     low:    { label: 'Prioridad baja',  color: 'text-slate-500', icon: '▼' },
     medium: { label: 'Prioridad media', color: 'text-amber-600', icon: '●' },
     high:   { label: 'Prioridad alta',  color: 'text-rose-600',  icon: '▲' },
   };
-  $: priority = priorityConfig[project.priority ?? 'medium'];
-  $: deadlineOverdue = project.deadline && new Date(project.deadline) < new Date(new Date().toDateString());
+  let priority = $derived(priorityConfig[project.priority ?? 'medium']);
+  let deadlineOverdue = $derived(project.deadline && new Date(project.deadline) < new Date(new Date().toDateString()));
 
-  $: progress = project.tasks_count > 0
+  let progress = $derived(project.tasks_count > 0
     ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
-    : 0;
+    : 0);
 
   const addForm = useForm({ user_id: '' });
 
@@ -147,6 +145,7 @@
 
       <!-- Quick actions -->
       <div class="grid gap-3 sm:grid-cols-2">
+        {#if canManageMembers}
         <Link
           href={route('projects.edit', project.uuid)}
           class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-200 hover:shadow-md"
@@ -164,6 +163,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
           </svg>
         </Link>
+        {/if}
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2">
@@ -227,15 +227,17 @@
                   <p class="text-xs text-slate-400">{member.roles?.[0]?.name ?? 'member'}</p>
                 </div>
               </div>
-              <button
-                onclick={() => removeMember(member)}
-                class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                title="Remover miembro"
-              >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {#if canManageMembers}
+                <button
+                  onclick={() => removeMember(member)}
+                  class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                  title="Remover miembro"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              {/if}
             </div>
           {/each}
 
@@ -245,7 +247,7 @@
         </div>
 
         <!-- Add member -->
-        {#if available.length > 0}
+        {#if canManageMembers && available.length > 0}
           <div class="border-t border-slate-100 p-4">
             <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Agregar miembro</p>
             <div class="flex gap-2">
@@ -276,21 +278,23 @@
               </button>
             </div>
           </div>
-        {:else}
+        {:else if canManageMembers}
           <p class="border-t border-slate-100 px-5 py-3 text-xs text-slate-400">Todos los usuarios ya son miembros.</p>
         {/if}
       </div>
 
-      <!-- Nueva tarea shortcut -->
-      <Link
-        href={route('projects.tasks.create', project.uuid)}
-        class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white py-4 text-sm font-semibold text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
-      >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Crear nueva tarea
-      </Link>
+      <!-- Nueva tarea shortcut — solo admin/manager -->
+      {#if canManageMembers}
+        <Link
+          href={route('projects.tasks.create', project.uuid)}
+          class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white py-4 text-sm font-semibold text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Crear nueva tarea
+        </Link>
+      {/if}
     </div>
 
   </div>

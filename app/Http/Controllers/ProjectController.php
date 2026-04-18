@@ -56,9 +56,10 @@ class ProjectController extends Controller
             ->get(['id', 'name', 'email', 'uuid']);
 
         return Inertia::render('Projects/Show', [
-            'project'   => $project->load(['owner', 'organization:id,name,color,uuid', 'department:id,name,color,uuid']),
-            'members'   => $members,
-            'available' => $available,
+            'project'          => $project->load(['owner', 'organization:id,name,color,uuid', 'department:id,name,color,uuid']),
+            'members'          => $members,
+            'available'        => $available,
+            'canManageMembers' => Gate::allows('update', $project),
         ]);
     }
 

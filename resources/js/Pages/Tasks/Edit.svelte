@@ -3,10 +3,7 @@
   import { Link, useForm, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let task: any;
-  export let members: any[] = [];
-  export let labels: { id: number; name: string; color: string }[] = [];
+  let { project, task, members = [], labels = [] }: { project: any; task: any; members?: any[]; labels?: { id: number; name: string; color: string }[] } = $props();
 
   const form = useForm({
     title:           task.title,
@@ -60,7 +57,7 @@
     { value: 4, label: 'Urgente', icon: '⚑', color: 'text-rose-600' },
   ];
 
-  let confirmingDelete = false;
+  let confirmingDelete = $state(false);
 
   function submit() {
     $form.put(route('projects.tasks.update', [project.uuid, task.uuid]));

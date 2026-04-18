@@ -3,7 +3,7 @@
   import { Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let projects: any;
+  let { projects }: { projects: any } = $props();
 
   const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
     active:    { label: 'Activo',     color: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',  dot: 'bg-emerald-500' },

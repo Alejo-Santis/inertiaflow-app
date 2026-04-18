@@ -1,19 +1,16 @@
 <script lang="ts">
   import Layout from '../Layout.svelte';
   import { useForm, router } from '@inertiajs/svelte';
+  import { untrack } from 'svelte';
   import route from 'ziggy-js';
 
-  export let user: {
-    id: number; name: string; email: string;
-    avatar_url?: string | null;
-    roles?: { name: string }[];
-  };
+  let { user }: { user: { id: number; name: string; email: string; avatar_url?: string | null; roles?: { name: string }[] } } = $props();
 
-  // Profile form
-  const profileForm = useForm({
+  // Profile form — untrack: queremos los valores iniciales, no reactividad continua
+  const profileForm = useForm(untrack(() => ({
     name:  user.name,
     email: user.email,
-  });
+  })));
 
   // Password form
   const passwordForm = useForm({
@@ -23,10 +20,10 @@
   });
 
   // Avatar upload
-  let avatarInput: HTMLInputElement;
-  let avatarPreview: string | null = user.avatar_url ?? null;
-  let avatarFile: File | null = null;
-  let avatarUploading = false;
+  let avatarInput: HTMLInputElement | undefined;
+  let avatarPreview: string | null = $state(untrack(() => user.avatar_url ?? null));
+  let avatarFile: File | null = $state(null);
+  let avatarUploading = $state(false);
 
   const submitProfile = (e: Event) => {
     e.preventDefault();
@@ -66,16 +63,16 @@
     });
   }
 
-  let showCurrentPwd = false;
-  let showNewPwd     = false;
-  let showConfirmPwd = false;
+  let showCurrentPwd = $state(false);
+  let showNewPwd     = $state(false);
+  let showConfirmPwd = $state(false);
 
-  $: pwdMismatch = $passwordForm.password.length > 0
+  let pwdMismatch = $derived($passwordForm.password.length > 0
     && $passwordForm.password_confirmation.length > 0
-    && $passwordForm.password !== $passwordForm.password_confirmation;
+    && $passwordForm.password !== $passwordForm.password_confirmation);
 
-  $: roleLabel = user.roles?.map(r => r.name).join(', ') ?? '';
-  $: initials = user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+  let roleLabel = $derived(user.roles?.map(r => r.name).join(', ') ?? '');
+  let initials  = $derived(user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase());
 </script>
 
 <Layout title="Mi perfil">

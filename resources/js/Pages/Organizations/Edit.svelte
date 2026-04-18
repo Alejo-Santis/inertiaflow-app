@@ -4,7 +4,7 @@
   import route from 'ziggy-js';
   import { calcDV } from '../../lib/nitDV';
 
-  export let organization: any;
+  let { organization }: { organization: any } = $props();
 
   const colorPresets = [
     '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',

@@ -3,7 +3,7 @@
   import { Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let organizations: any[];
+  let { organizations }: { organizations: any[] } = $props();
 
   const getInitials = (name: string): string =>
     name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();

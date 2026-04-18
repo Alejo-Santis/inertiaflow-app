@@ -2,20 +2,22 @@
   import { usePage, router, Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let status: 'pending' | 'expired' | 'already_accepted';
-  export let invitation: {
-    email: string;
-    role: string;
-    role_label: string;
-    expires_at: string;
-    accepted_at?: string;
-    organization: { name: string; uuid: string; description?: string };
-    inviter: { name: string };
-  };
-  export let token: string | null = null;
+  let { status, invitation, token = null }: {
+    status: 'pending' | 'expired' | 'already_accepted';
+    invitation: {
+      email: string;
+      role: string;
+      role_label: string;
+      expires_at: string;
+      accepted_at?: string;
+      organization: { name: string; uuid: string; description?: string };
+      inviter: { name: string };
+    };
+    token?: string | null;
+  } = $props();
 
   const page = usePage();
-  $: user = ($page.props.auth as any)?.user;
+  let user = $derived(($page.props.auth as any)?.user);
 
   const roleColors: Record<string, string> = {
     owner:   'bg-violet-100 text-violet-700',
@@ -24,7 +26,7 @@
     member:  'bg-indigo-50 text-indigo-700',
   };
 
-  let accepting = false;
+  let accepting = $state(false);
 
   function accept() {
     if (!token) return;

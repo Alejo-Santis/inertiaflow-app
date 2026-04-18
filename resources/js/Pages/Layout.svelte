@@ -4,13 +4,14 @@
   import Swal from 'sweetalert2';
   import route from 'ziggy-js';
 
-  export let title = 'InertiaFlow';
+  import type { Snippet } from 'svelte';
+  let { title = 'InertiaFlow', children }: { title?: string; children?: Snippet } = $props();
 
   const page = usePage();
 
-  let menuOpen      = false;
-  let notifOpen     = false;
-  let mobileNavOpen = false;
+  let menuOpen      = $state(false);
+  let notifOpen     = $state(false);
+  let mobileNavOpen = $state(false);
 
   const navItems = [
     {
@@ -47,16 +48,16 @@
     },
   ] as const;
 
-  $: notifications     = ($page.props.notifications as any[]) ?? [];
-  $: unreadCount       = ($page.props.unread_notif_count as number) ?? 0;
-  $: user    = $page.props.auth?.user;
-  $: isAdmin = $page.props.auth?.isAdmin ?? false;
+  let notifications     = $derived(($page.props.notifications as any[]) ?? []);
+  let unreadCount       = $derived(($page.props.unread_notif_count as number) ?? 0);
+  let user    = $derived($page.props.auth?.user);
+  let isAdmin = $derived($page.props.auth?.isAdmin ?? false);
 
-  $: initials = user?.name
+  let initials = $derived(user?.name
     ? user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-    : '?';
+    : '?');
 
-  $: {
+  $effect(() => {
     const flash = $page?.props?.flash;
     if (flash?.success) {
       Swal.fire({
@@ -80,7 +81,7 @@
         timerProgressBar: true,
       });
     }
-  }
+  });
 
   function logout() {
     menuOpen = false;
@@ -96,14 +97,14 @@
   }
 
   // ── Global search (Ctrl+K / Cmd+K) ────────────────────────────────────────
-  let searchOpen    = false;
-  let searchQuery   = '';
-  let searchResults = {
+  let searchOpen    = $state(false);
+  let searchQuery   = $state('');
+  let searchResults = $state({
     projects: [] as any[], tasks: [] as any[],
     organizations: [] as any[], departments: [] as any[], members: [] as any[],
-  };
-  let searchLoading = false;
-  let searchIndex   = 0;   // keyboard navigation
+  });
+  let searchLoading = $state(false);
+  let searchIndex   = $state(0);   // keyboard navigation
   let searchDebounce: ReturnType<typeof setTimeout>;
   let searchInput: HTMLInputElement;
 
@@ -186,25 +187,25 @@
     searchDebounce = setTimeout(() => doSearch(searchQuery), 220);
   }
 
-  $: allResults = [
+  let allResults = $derived([
     ...searchResults.projects.map((p: any)      => ({ type: 'project',      ...p })),
     ...searchResults.tasks.map((t: any)          => ({ type: 'task',         ...t })),
     ...searchResults.organizations.map((o: any)  => ({ type: 'organization', ...o })),
     ...searchResults.departments.map((d: any)    => ({ type: 'department',   ...d })),
     ...searchResults.members.map((m: any)        => ({ type: 'member',       ...m })),
-  ];
+  ]);
 
   // Lista unificada de items navegables: acciones rápidas cuando vacío, resultados cuando hay query
-  $: navigableItems = searchQuery.length === 0
+  let navigableItems = $derived(searchQuery.length === 0
     ? quickActions.map(a => ({ type: 'quick' as const, ...a }))
-    : allResults;
+    : allResults);
 
   // Resetear índice cuando cambia el modo (vacío ↔ con resultados) o llegan nuevos resultados
-  let _prevMode = '';
-  $: {
+  let _prevMode = $state('');
+  $effect(() => {
     const mode = searchQuery.length === 0 ? 'quick' : 'results:' + allResults.length;
     if (mode !== _prevMode) { _prevMode = mode; searchIndex = 0; }
-  }
+  });
 
   function navigateResult(item: any) {
     closeSearch();
@@ -264,7 +265,7 @@
   <title>{title} — InertiaFlow</title>
 </svelte:head>
 
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 {#if menuOpen}
   <div class="fixed inset-0 z-30" onclick={() => (menuOpen = false)}></div>
 {/if}
@@ -801,6 +802,6 @@
 
   <!-- Page content -->
   <main class="mx-auto w-full max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
-    <slot />
+    {@render children?.()}
   </main>
 </div>

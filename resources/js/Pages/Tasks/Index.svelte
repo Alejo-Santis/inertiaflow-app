@@ -1,11 +1,11 @@
 <script lang="ts">
   import Layout from '../Layout.svelte';
-  import { Link, router } from '@inertiajs/svelte';
+  import { Link, router, page } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let tasks: any;
-  export let filters: any = {};
+  let canCreateTask = $derived($page.props.auth.isAdmin || $page.props.auth.roles?.includes('manager'));
+
+  let { project, tasks, filters = {} }: { project: any; tasks: any; filters?: any } = $props();
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -41,8 +41,8 @@
     { value: '4', label: '⚑ Urgente' },
   ];
 
-  let selectedStatus   = filters?.status   ?? '';
-  let selectedPriority = filters?.priority ?? '';
+  let selectedStatus   = $state(filters?.status   ?? '');
+  let selectedPriority = $state(filters?.priority ?? '');
 
   function applyFilters() {
     const params: Record<string, string> = {};
@@ -85,7 +85,7 @@
     return avatarColors[id % avatarColors.length];
   }
 
-  $: hasFilters = !!filters?.status || !!filters?.priority;
+  let hasFilters = $derived(!!filters?.status || !!filters?.priority);
 </script>
 
 <Layout title="Tareas">
@@ -141,15 +141,17 @@
         </svg>
         CSV
       </a>
-      <Link
-        href={route('projects.tasks.create', project.uuid)}
-        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 hover:shadow-md"
-      >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Nueva tarea
-      </Link>
+      {#if canCreateTask}
+        <Link
+          href={route('projects.tasks.create', project.uuid)}
+          class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 hover:shadow-md"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Nueva tarea
+        </Link>
+      {/if}
     </div>
   </div>
 
@@ -338,15 +340,17 @@
       {:else}
         <h3 class="mt-4 text-lg font-semibold text-slate-800">Sin tareas aún</h3>
         <p class="mt-2 max-w-xs text-sm text-slate-500">Agrega la primera tarea a este proyecto para comenzar a trabajar.</p>
-        <Link
-          href={route('projects.tasks.create', project.uuid)}
-          class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
-        >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Crear primera tarea
-        </Link>
+        {#if canCreateTask}
+          <Link
+            href={route('projects.tasks.create', project.uuid)}
+            class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Crear primera tarea
+          </Link>
+        {/if}
       {/if}
     </div>
   {/if}

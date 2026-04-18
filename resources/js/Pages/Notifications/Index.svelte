@@ -3,7 +3,7 @@
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let notifications: any;
+  let { notifications }: { notifications: any } = $props();
 
   const typeConfig: Record<string, { label: string; icon: string; color: string }> = {
     task_assigned:  { label: 'Tarea asignada',   icon: '✓',  color: 'bg-indigo-100 text-indigo-700' },

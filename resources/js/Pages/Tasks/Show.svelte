@@ -3,15 +3,12 @@
   import { Link, useForm, router, usePage } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let task: any;
-  export let members: any[] = [];
-  export let logged_hours: number = 0;
-  export let attachments: any[] = [];
-  export let labels: { id: number; name: string; color: string }[] = [];
+  let { project, task, members = [], logged_hours = 0, attachments = [], labels = [] }: {
+    project: any; task: any; members?: any[]; logged_hours?: number; attachments?: any[]; labels?: { id: number; name: string; color: string }[];
+  } = $props();
 
   const page = usePage();
-  $: auth = $page.props.auth as any;
+  let auth = $derived($page.props.auth as any);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -30,9 +27,9 @@
     4: { label: 'Urgente', color: 'text-rose-600 bg-rose-50',    icon: '⚑' },
   };
 
-  $: status   = statusConfig[task.status]   ?? { label: task.status,   color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' };
-  $: priority = priorityConfig[task.priority] ?? { label: `P${task.priority}`, color: 'text-slate-600 bg-slate-100', icon: '-' };
-  $: overdue  = !!task.due_date && task.due_date < today && task.status !== 'done' && task.status !== 'cancelled';
+  let status   = $derived(statusConfig[task.status]   ?? { label: task.status,   color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' });
+  let priority = $derived(priorityConfig[task.priority] ?? { label: `P${task.priority}`, color: 'text-slate-600 bg-slate-100', icon: '-' });
+  let overdue  = $derived(!!task.due_date && task.due_date < today && task.status !== 'done' && task.status !== 'cancelled');
 
   // Status change
   const statusOptions = [
@@ -43,7 +40,7 @@
     { value: 'cancelled',   label: 'Cancelado' },
   ];
 
-  let updatingStatus = false;
+  let updatingStatus = $state(false);
   function changeStatus(newStatus: string) {
     if (newStatus === task.status || updatingStatus) return;
     updatingStatus = true;
@@ -121,14 +118,14 @@
   }
 
   // @mention autocomplete
-  let mentionActive  = false;
-  let mentionQuery   = '';
-  let mentionStart   = 0;
-  let mentionIndex   = 0;
+  let mentionActive  = $state(false);
+  let mentionQuery   = $state('');
+  let mentionStart   = $state(0);
+  let mentionIndex   = $state(0);
   let commentTextarea: HTMLTextAreaElement;
-  $: mentionSuggestions = mentionQuery === ''
+  let mentionSuggestions = $derived(mentionQuery === ''
     ? members.slice(0, 6)
-    : members.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
+    : members.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6));
 
   function onCommentInput(e: Event) {
     const ta    = e.target as HTMLTextAreaElement;

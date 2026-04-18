@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -10,10 +11,11 @@ class MyTasksController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user    = $request->user();
+        $isAdmin = $user->hasRole(GlobalRole::Admin->value);
 
-        $tasks = Task::whereHas('assignees', fn($q) => $q->where('users.id', $user->id))
-            ->with(['project:id,uuid,name,color', 'assignees:id,name,uuid'])
+        $tasks = Task::when(! $isAdmin, fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id)))
+            ->with(['project:id,uuid,name,color', 'assignees:id,name,uuid', 'creator:id,name,uuid'])
             ->when($request->input('status'), fn($q, $v) => $q->where('status', $v))
             ->when($request->input('priority'), fn($q, $v) => $q->where('priority', $v))
             ->orderByRaw("CASE status
@@ -30,6 +32,7 @@ class MyTasksController extends Controller
         return Inertia::render('Tasks/Mine', [
             'tasks'   => $tasks,
             'filters' => $request->only(['status', 'priority']),
+            'isAdmin' => $isAdmin,
         ]);
     }
 }

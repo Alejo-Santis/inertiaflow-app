@@ -3,7 +3,7 @@
   import { Link, useForm } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let organizations: { id: number; uuid: string; name: string; color: string; departments: { id: number; uuid: string; name: string }[] }[] = [];
+  let { organizations = [] }: { organizations?: { id: number; uuid: string; name: string; color: string; departments: { id: number; uuid: string; name: string }[] }[] } = $props();
 
   const form = useForm({
     name: '',
@@ -18,8 +18,8 @@
     department_id:   '' as string | number,
   });
 
-  $: selectedOrg = organizations.find(o => o.id === Number($form.organization_id)) ?? null;
-  $: if ($form.organization_id === '') $form.department_id = '';
+  let selectedOrg = $derived(organizations.find(o => o.id === Number($form.organization_id)) ?? null);
+  $effect(() => { if ($form.organization_id === '') $form.department_id = ''; });
 
   const statusOptions = [
     { value: 'active',    label: 'Activo' },

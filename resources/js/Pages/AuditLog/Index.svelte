@@ -3,12 +3,11 @@
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let logs: any;
-  export let filters: { log_name?: string; event?: string; search?: string };
+  let { logs, filters }: { logs: any; filters: { log_name?: string; event?: string; search?: string } } = $props();
 
-  let search   = filters.search   ?? '';
-  let log_name = filters.log_name ?? '';
-  let event    = filters.event    ?? '';
+  let search   = $state(filters.search   ?? '');
+  let log_name = $state(filters.log_name ?? '');
+  let event    = $state(filters.event    ?? '');
 
   function applyFilters() {
     router.get(route('admin.audit-log'), { search, log_name, event }, { preserveState: true, replace: true });

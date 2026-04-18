@@ -3,8 +3,8 @@
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let project: any;
-  export let tasks: any[];
+  let { project, tasks: _tasksInit }: { project: any; tasks: any[] } = $props();
+  let tasks = $state(_tasksInit);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -24,13 +24,13 @@
   };
 
   // Group tasks by status — reactive so drag-drop updates reflect immediately
-  $: grouped = Object.fromEntries(
+  let grouped = $derived(Object.fromEntries(
     columns.map(col => [col.id, tasks.filter(t => t.status === col.id)])
-  );
+  ));
 
   // Drag state
-  let draggingTaskId: number | null = null;
-  let draggingOverCol: string | null = null;
+  let draggingTaskId  = $state<number | null>(null);
+  let draggingOverCol = $state<string | null>(null);
 
   function onDragStart(event: DragEvent, task: any) {
     draggingTaskId = task.id;

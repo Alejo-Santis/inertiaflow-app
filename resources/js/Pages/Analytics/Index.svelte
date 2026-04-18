@@ -3,11 +3,13 @@
   import { Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let stats: any;
-  export let by_status: Record<string, number>;
-  export let by_priority: Record<string, number>;
-  export let projects: any[];
-  export let activity: Record<string, number>;
+  let { stats, by_status, by_priority, projects, activity }: {
+    stats: any;
+    by_status: Record<string, number>;
+    by_priority: Record<string, number>;
+    projects: any[];
+    activity: Record<string, number>;
+  } = $props();
 
   const statusConfig: Record<string, { label: string; color: string; bar: string }> = {
     todo:        { label: 'Por hacer',   color: 'text-slate-600',   bar: 'bg-slate-400' },

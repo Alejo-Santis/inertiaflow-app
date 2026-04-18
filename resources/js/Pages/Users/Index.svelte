@@ -3,7 +3,7 @@
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let users: any;
+  let { users }: { users: any } = $props();
 
   const roleConfig: Record<string, { label: string; color: string }> = {
     admin:   { label: 'Admin',    color: 'bg-violet-100 text-violet-700 ring-1 ring-violet-200' },
@@ -19,7 +19,7 @@
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }
 
-  let deletingId: string | null = null;
+  let deletingId = $state<string | null>(null);
 
   function confirmDelete(user: any) {
     deletingId = user.uuid;

@@ -3,11 +3,10 @@
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  export let tasks: any;
-  export let filters: { status?: string; priority?: string };
+  let { tasks, filters, isAdmin = false }: { tasks: any; filters: { status?: string; priority?: string }; isAdmin?: boolean } = $props();
 
-  let status   = filters.status   ?? '';
-  let priority = filters.priority ?? '';
+  let status   = $state(filters.status   ?? '');
+  let priority = $state(filters.priority ?? '');
 
   function applyFilters() {
     router.get(route('my-tasks'), { status, priority }, { preserveState: true, replace: true });
@@ -34,12 +33,12 @@
   }
 </script>
 
-<Layout title="Mis tareas">
+<Layout title={isAdmin ? 'Tareas' : 'Mis tareas'}>
 
   <div class="mb-6 flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Mis tareas</h1>
-      <p class="mt-1 text-sm text-slate-500">Todas las tareas asignadas a ti</p>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">{isAdmin ? 'Todas las tareas' : 'Mis tareas'}</h1>
+      <p class="mt-1 text-sm text-slate-500">{isAdmin ? 'Todas las tareas del sistema' : 'Todas las tareas asignadas a ti'}</p>
     </div>
     <span class="rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200">
       {tasks.total} tareas
@@ -107,6 +106,16 @@
 
           <!-- Meta -->
           <div class="flex shrink-0 items-center gap-3">
+            {#if isAdmin && task.assignees?.length}
+              <div class="hidden items-center gap-1 sm:flex">
+                {#each task.assignees.slice(0, 2) as assignee}
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{assignee.name.split(' ')[0]}</span>
+                {/each}
+                {#if task.assignees.length > 2}
+                  <span class="text-xs text-slate-400">+{task.assignees.length - 2}</span>
+                {/if}
+              </div>
+            {/if}
             <span class="hidden text-xs font-medium {pri.color} sm:block">{pri.label}</span>
             <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {st.color}">
               <span class="h-1.5 w-1.5 rounded-full {st.dot}"></span>

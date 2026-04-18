@@ -128,7 +128,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Gestión de usuarios + audit logs — solo admin
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log');
     });
