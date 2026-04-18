@@ -29,66 +29,63 @@
   // Invitaciones
   const inviteForm = useForm({ email: '', role: 'member' });
 
-  function sendInvite() {
+  const sendInvite = () => {
     if (!$inviteForm.email) return;
     $inviteForm.post(route('organizations.invitations.store', organization.uuid), {
       onSuccess: () => { $inviteForm.email = ''; $inviteForm.role = 'member'; },
     });
-  }
+  };
 
-  function cancelInvitation(invitationId: number) {
+  const cancelInvitation = (invitationId: number) => {
     if (confirm('¿Cancelar esta invitación?')) {
       router.delete(route('organizations.invitations.destroy', [organization.uuid, invitationId]), {
         preserveScroll: true,
       });
     }
-  }
+  };
 
   // Modal de nuevo departamento
   let deptModal = false;
   const deptForm = useForm({ name: '', description: '', color: '#6366f1', lead_id: '' });
 
-  function createDept() {
+  const createDept = () =>
     $deptForm.post(route('organizations.departments.store', organization.uuid), {
       onSuccess: () => { deptModal = false; $deptForm.reset(); },
     });
-  }
 
   // Agregar miembro a la org
   const memberForm = useForm({ user_id: '', role: 'member' });
 
-  function addMember() {
+  const addMember = () => {
     if (!$memberForm.user_id) return;
     $memberForm.post(route('organizations.members.store', organization.uuid), {
       onSuccess: () => { $memberForm.user_id = ''; $memberForm.role = 'member'; },
     });
-  }
+  };
 
-  function removeMember(user: any) {
+  const removeMember = (user: any) => {
     if (confirm(`¿Remover a ${user.name} de la organización?`)) {
       router.delete(route('organizations.members.destroy', [organization.uuid, user.uuid]), {
         preserveScroll: true,
       });
     }
-  }
+  };
 
-  function changeRole(user: any, newRole: string) {
+  const changeRole = (user: any, newRole: string) =>
     router.patch(route('organizations.members.update', [organization.uuid, user.uuid]), {
       role: newRole,
     }, { preserveScroll: true });
-  }
 
-  function deleteDept(dept: any) {
+  const deleteDept = (dept: any) => {
     if (confirm(`¿Eliminar el departamento "${dept.name}"? Esta acción no se puede deshacer.`)) {
       router.delete(route('organizations.departments.destroy', [organization.uuid, dept.uuid]), {
         preserveScroll: true,
       });
     }
-  }
+  };
 
-  function getInitials(name: string): string {
-    return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
-  }
+  const getInitials = (name: string): string =>
+    name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
 
   const deptColors = [
     '#6366f1', '#8b5cf6', '#ec4899', '#14b8a6',

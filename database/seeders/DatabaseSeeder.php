@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\OrgMemberRole;
 use App\Models\Department;
 use App\Models\DepartmentMember;
 use App\Models\Organization;
@@ -52,9 +53,9 @@ class DatabaseSeeder extends Seeder
         $manager->assignRole('manager');
 
         $techLead = User::updateOrCreate(
-            ['email' => 'techlead@inertiaflow.com'],
+            ['email' => 'leider.guzmane@inertiaflow.com'],
             [
-                'name' => 'Alejandro Santis',
+                'name' => 'Leider Guzman',
                 'password' => bcrypt('Password123.'),
                 'uuid' => (string) Uuid::uuid4()->toString(),
             ]
@@ -97,23 +98,23 @@ class DatabaseSeeder extends Seeder
         // Miembros de la organización
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $admin->id],
-            ['role' => OrganizationMember::ROLE_OWNER]
+            ['role' => OrgMemberRole::Owner]
         );
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $manager->id],
-            ['role' => OrganizationMember::ROLE_MANAGER]
+            ['role' => OrgMemberRole::Manager]
         );
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $techLead->id],
-            ['role' => OrganizationMember::ROLE_MEMBER]
+            ['role' => OrgMemberRole::Member]
         );
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $dev1->id],
-            ['role' => OrganizationMember::ROLE_MEMBER]
+            ['role' => OrgMemberRole::Member]
         );
         OrganizationMember::updateOrCreate(
             ['organization_id' => $org->id, 'user_id' => $dev2->id],
-            ['role' => OrganizationMember::ROLE_MEMBER]
+            ['role' => OrgMemberRole::Member]
         );
 
         // Departamento de Desarrollo

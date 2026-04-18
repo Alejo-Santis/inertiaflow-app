@@ -12,15 +12,12 @@
 
   const form = useForm({ name: '', nit: '', dv: '', description: '', color: '#6366f1' });
 
-  function onNitInput() {
-    // Solo dígitos en el campo NIT
+  const onNitInput = () => {
     $form.nit = $form.nit.replace(/\D/g, '');
     $form.dv  = calcDV($form.nit);
-  }
+  };
 
-  function submit() {
-    $form.post(route('organizations.store'));
-  }
+  const submit = () => $form.post(route('organizations.store'));
 </script>
 
 <Layout title="Nueva organización">

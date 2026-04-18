@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GlobalRole;
+use App\Enums\OrgMemberRole;
+use App\Http\Requests\Organization\StoreOrganizationRequest;
+use App\Http\Requests\Organization\UpdateOrganizationRequest;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMember;
@@ -17,8 +21,7 @@ class OrganizationController extends Controller
     {
         $user = request()->user();
 
-        // Admin ve todas; el resto solo las suyas
-        $organizations = $user->hasRole('admin')
+        $organizations = $user->hasRole(GlobalRole::Admin->value)
             ? Organization::with('owner')->withCount(['members', 'departments', 'projects'])->get()
             : $user->organizations()->with('owner')->withCount(['members', 'departments', 'projects'])->get();
 
@@ -38,6 +41,7 @@ class OrganizationController extends Controller
         ]);
 
         $memberUserIds = $organization->members->pluck('user_id');
+
         $available = User::whereNotIn('id', $memberUserIds)
             ->orderBy('name')
             ->get(['id', 'uuid', 'name', 'email']);
@@ -59,7 +63,7 @@ class OrganizationController extends Controller
         return Inertia::render('Organizations/Show', [
             'organization'       => $organization,
             'available'          => $available,
-            'orgRoles'           => OrganizationMember::roles(),
+            'orgRoles'           => OrgMemberRole::values(),
             'pendingInvitations' => $pendingInvitations,
         ]);
     }
@@ -69,15 +73,9 @@ class OrganizationController extends Controller
         return Inertia::render('Organizations/Create');
     }
 
-    public function store(Request $request)
+    public function store(StoreOrganizationRequest $request)
     {
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'nit'         => 'required|string|max:20|unique:organizations,nit',
-            'dv'          => 'required|string|max:1',
-            'description' => 'nullable|string',
-            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-        ]);
+        $data = $request->validated();
 
         $data['owner_id'] = $request->user()->id;
         $data['slug']     = Str::slug($data['name']) . '-' . Str::lower(Str::random(5));
@@ -85,11 +83,10 @@ class OrganizationController extends Controller
 
         $org = Organization::create($data);
 
-        // El creador queda como owner automáticamente
         OrganizationMember::create([
             'organization_id' => $org->id,
             'user_id'         => $request->user()->id,
-            'role'            => OrganizationMember::ROLE_OWNER,
+            'role'            => OrgMemberRole::Owner,
         ]);
 
         return redirect()->route('organizations.show', $org->uuid)
@@ -105,19 +102,11 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function update(Request $request, Organization $organization)
+    public function update(UpdateOrganizationRequest $request, Organization $organization)
     {
         $this->authorizeEdit($organization);
 
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'nit'         => 'required|string|max:20|unique:organizations,nit,' . $organization->id,
-            'dv'          => 'required|string|max:1',
-            'description' => 'nullable|string',
-            'color'       => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-        ]);
-
-        $organization->update($data);
+        $organization->update($request->validated());
 
         return redirect()->route('organizations.show', $organization->uuid)
             ->with('success', 'Organización actualizada.');

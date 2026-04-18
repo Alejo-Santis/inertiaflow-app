@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\GlobalRole;
+use App\Enums\OrgMemberRole;
 use App\Models\OrganizationMember;
 use App\Models\UserNotification;
 use App\Support\OrgRole;
@@ -41,8 +43,8 @@ class HandleInertiaRequests extends Middleware
                 'organization_uuid' => $m->organization->uuid,
                 'organization_name' => $m->organization->name,
                 'role'             => $m->role,
-                'abilities'        => $user->hasRole('admin')
-                    ? array_fill_keys(array_keys(OrgRole::abilityMap('owner')), true)
+                'abilities'        => $user->hasRole(GlobalRole::Admin->value)
+                    ? array_fill_keys(array_keys(OrgRole::abilityMap(OrgMemberRole::Owner)), true)
                     : OrgRole::abilityMap($m->role),
             ])
             ->toArray();
@@ -87,7 +89,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user'           => $request->user(),
-                'isAdmin'        => fn() => $request->user()?->hasRole('admin') ?? false,
+                'isAdmin'        => fn() => $request->user()?->hasRole(GlobalRole::Admin->value) ?? false,
                 'roles'          => fn() => $request->user()?->getRoleNames() ?? [],
                 'permissions'    => fn() => $request->user()?->getAllPermissions()->pluck('name') ?? [],
                 'orgMemberships' => fn() => $this->orgMemberships($request),

@@ -28,33 +28,31 @@
 
   const addForm = useForm({ user_id: '', role: 'member' });
 
-  function addMember() {
+  const addMember = () => {
     if (!$addForm.user_id) return;
     $addForm.post(route('organizations.departments.members.store', [organization.uuid, department.uuid]), {
       onSuccess: () => { $addForm.user_id = ''; $addForm.role = 'member'; },
     });
-  }
+  };
 
-  function changeRole(user: any, newRole: string) {
+  const changeRole = (user: any, newRole: string) =>
     router.patch(
       route('organizations.departments.members.update', [organization.uuid, department.uuid, user.uuid]),
       { role: newRole },
       { preserveScroll: true }
     );
-  }
 
-  function removeMember(user: any) {
+  const removeMember = (user: any) => {
     if (confirm(`¿Remover a ${user.name} del departamento?`)) {
       router.delete(
         route('organizations.departments.members.destroy', [organization.uuid, department.uuid, user.uuid]),
         { preserveScroll: true }
       );
     }
-  }
+  };
 
-  function getInitials(name: string): string {
-    return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
-  }
+  const getInitials = (name: string): string =>
+    name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
 
   // Ordenar miembros por jerarquía
   const roleOrder: Record<string, number> = { team_lead: 0, tech_lead: 1, senior: 2, member: 3 };

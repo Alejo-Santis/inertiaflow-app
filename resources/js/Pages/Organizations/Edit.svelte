@@ -20,14 +20,12 @@
     color:       organization.color ?? '#6366f1',
   });
 
-  function onNitInput() {
+  const onNitInput = () => {
     $form.nit = $form.nit.replace(/\D/g, '');
     $form.dv  = calcDV($form.nit);
-  }
+  };
 
-  function submit() {
-    $form.put(route('organizations.update', organization.uuid));
-  }
+  const submit = () => $form.put(route('organizations.update', organization.uuid));
 </script>
 
 <Layout title="Editar organización">

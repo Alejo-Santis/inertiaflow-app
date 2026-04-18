@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OrgMemberRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,23 +18,14 @@ class OrganizationMember extends Model
     ];
 
     protected $casts = [
+        'role'      => OrgMemberRole::class,
         'joined_at' => 'datetime',
     ];
 
-    // Roles disponibles en una organización
-    const ROLE_OWNER   = 'owner';
-    const ROLE_ADMIN   = 'admin';
-    const ROLE_MANAGER = 'manager';
-    const ROLE_MEMBER  = 'member';
-
+    /** @return string[] */
     public static function roles(): array
     {
-        return [
-            self::ROLE_OWNER,
-            self::ROLE_ADMIN,
-            self::ROLE_MANAGER,
-            self::ROLE_MEMBER,
-        ];
+        return OrgMemberRole::values();
     }
 
     public function organization(): BelongsTo

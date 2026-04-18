@@ -5,9 +5,8 @@
 
   export let organizations: any[];
 
-  function getInitials(name: string): string {
-    return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
-  }
+  const getInitials = (name: string): string =>
+    name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
 </script>
 
 <Layout title="Organizaciones">

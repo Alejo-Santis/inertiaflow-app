@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrgMemberRole;
 use App\Models\Organization;
 use App\Models\OrganizationMember;
 use App\Models\User;
@@ -15,8 +16,8 @@ class OrganizationMemberController extends Controller
         $this->authorizeManage($organization);
 
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role'    => 'required|in:' . implode(',', OrganizationMember::roles()),
+            'user_id' => ['required', 'exists:users,id'],
+            'role'    => ['required', OrgMemberRole::rule()],
         ]);
 
         if ($organization->members()->where('user_id', $validated['user_id'])->exists()) {
@@ -37,13 +38,12 @@ class OrganizationMemberController extends Controller
         $this->authorizeManage($organization);
 
         $validated = $request->validate([
-            'role' => 'required|in:' . implode(',', OrganizationMember::roles()),
+            'role' => ['required', OrgMemberRole::rule()],
         ]);
 
-        // No se puede cambiar el rol del owner
         $member = $organization->members()->where('user_id', $user->id)->firstOrFail();
 
-        if ($member->role === OrganizationMember::ROLE_OWNER) {
+        if ($member->role === OrgMemberRole::Owner) {
             return back()->with('error', 'No se puede cambiar el rol del owner.');
         }
 
@@ -58,7 +58,7 @@ class OrganizationMemberController extends Controller
 
         $member = $organization->members()->where('user_id', $user->id)->firstOrFail();
 
-        if ($member->role === OrganizationMember::ROLE_OWNER) {
+        if ($member->role === OrgMemberRole::Owner) {
             return back()->with('error', 'No puedes remover al owner de la organización.');
         }
 
