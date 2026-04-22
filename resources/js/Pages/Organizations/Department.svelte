@@ -3,6 +3,7 @@
   import { Link, useForm, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
   import { useOrgAbilities, OrgActions } from '../../lib/orgCan';
+  import Swal from 'sweetalert2';
 
   let { organization, department, available, deptRoles }: { organization: any; department: any; available: any[]; deptRoles: string[] } = $props();
 
@@ -39,8 +40,18 @@
       { preserveScroll: true }
     );
 
-  const removeMember = (user: any) => {
-    if (confirm(`¿Remover a ${user.name} del departamento?`)) {
+  const removeMember = async (user: any) => {
+    const result = await Swal.fire({
+      title: '¿Remover del departamento?',
+      text: `${user.name} será removido del equipo.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, remover',
+      cancelButtonText: 'Cancelar',
+    });
+    if (result.isConfirmed) {
       router.delete(
         route('organizations.departments.members.destroy', [organization.uuid, department.uuid, user.uuid]),
         { preserveScroll: true }

@@ -3,6 +3,7 @@
   import { Link, useForm, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
   import { useOrgAbilities, OrgActions } from '../../lib/orgCan';
+  import Swal from 'sweetalert2';
 
   let { organization, available, orgRoles, pendingInvitations = [] }: { organization: any; available: any[]; orgRoles: string[]; pendingInvitations?: any[] } = $props();
 
@@ -33,8 +34,17 @@
     });
   };
 
-  const cancelInvitation = (invitationId: number) => {
-    if (confirm('¿Cancelar esta invitación?')) {
+  const cancelInvitation = async (invitationId: number) => {
+    const result = await Swal.fire({
+      title: '¿Cancelar invitación?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, cancelar',
+      cancelButtonText: 'No',
+    });
+    if (result.isConfirmed) {
       router.delete(route('organizations.invitations.destroy', [organization.uuid, invitationId]), {
         preserveScroll: true,
       });
@@ -60,8 +70,18 @@
     });
   };
 
-  const removeMember = (user: any) => {
-    if (confirm(`¿Remover a ${user.name} de la organización?`)) {
+  const removeMember = async (user: any) => {
+    const result = await Swal.fire({
+      title: '¿Remover de la organización?',
+      text: `${user.name} perderá el acceso a esta organización.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, remover',
+      cancelButtonText: 'Cancelar',
+    });
+    if (result.isConfirmed) {
       router.delete(route('organizations.members.destroy', [organization.uuid, user.uuid]), {
         preserveScroll: true,
       });
@@ -73,8 +93,18 @@
       role: newRole,
     }, { preserveScroll: true });
 
-  const deleteDept = (dept: any) => {
-    if (confirm(`¿Eliminar el departamento "${dept.name}"? Esta acción no se puede deshacer.`)) {
+  const deleteDept = async (dept: any) => {
+    const result = await Swal.fire({
+      title: `¿Eliminar "${dept.name}"?`,
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (result.isConfirmed) {
       router.delete(route('organizations.departments.destroy', [organization.uuid, dept.uuid]), {
         preserveScroll: true,
       });

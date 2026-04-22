@@ -2,6 +2,7 @@
   import Layout from '../Layout.svelte';
   import { Link, router } from '@inertiajs/svelte';
   import route from 'ziggy-js';
+  import Swal from 'sweetalert2';
 
   let { users }: { users: any } = $props();
 
@@ -19,20 +20,20 @@
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }
 
-  let deletingId = $state<string | null>(null);
-
-  function confirmDelete(user: any) {
-    deletingId = user.uuid;
-  }
-
-  function cancelDelete() {
-    deletingId = null;
-  }
-
-  function deleteUser(user: any) {
-    router.delete(route('admin.users.destroy', user.uuid), {
-      onSuccess: () => { deletingId = null; },
+  async function deleteUser(user: any) {
+    const result = await Swal.fire({
+      title: '¿Eliminar usuario?',
+      text: `"${user.name}" será eliminado permanentemente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
     });
+    if (result.isConfirmed) {
+      router.delete(route('admin.users.destroy', user.uuid));
+    }
   }
 </script>
 
@@ -99,35 +100,20 @@
                 {new Date(user.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
               </td>
               <td class="whitespace-nowrap px-6 py-4 text-right">
-                {#if deletingId === user.uuid}
-                  <!-- Confirm delete -->
-                  <div class="flex items-center justify-end gap-2">
-                    <span class="text-xs text-slate-500">¿Confirmar?</span>
-                    <button
-                      onclick={() => deleteUser(user)}
-                      class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
-                    >Eliminar</button>
-                    <button
-                      onclick={cancelDelete}
-                      class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                    >Cancelar</button>
-                  </div>
-                {:else}
-                  <div class="flex items-center justify-end gap-2 opacity-0 transition group-hover:opacity-100">
-                    <Link
-                      href={route('admin.users.edit', user.uuid)}
-                      class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700"
-                    >
-                      Editar
-                    </Link>
-                    <button
-                      onclick={() => confirmDelete(user)}
-                      class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm hover:border-rose-300 hover:bg-rose-50"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                {/if}
+                <div class="flex items-center justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+                  <Link
+                    href={route('admin.users.edit', user.uuid)}
+                    class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    onclick={() => deleteUser(user)}
+                    class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm hover:border-rose-300 hover:bg-rose-50"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           {/each}

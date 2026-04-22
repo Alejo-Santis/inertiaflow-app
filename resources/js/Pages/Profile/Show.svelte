@@ -3,6 +3,7 @@
   import { useForm, router } from '@inertiajs/svelte';
   import { untrack } from 'svelte';
   import route from 'ziggy-js';
+  import Swal from 'sweetalert2';
 
   let { user }: { user: { id: number; name: string; email: string; avatar_url?: string | null; roles?: { name: string }[] } } = $props();
 
@@ -56,8 +57,17 @@
     });
   }
 
-  function deleteAvatar() {
-    if (!confirm('¿Eliminar foto de perfil?')) return;
+  async function deleteAvatar() {
+    const result = await Swal.fire({
+      title: '¿Eliminar foto de perfil?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
     router.delete(route('profile.avatar.delete'), {
       onSuccess: () => { avatarPreview = null; },
     });

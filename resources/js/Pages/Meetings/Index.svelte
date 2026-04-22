@@ -2,6 +2,7 @@
   import Layout from '../Layout.svelte';
   import { Link, useForm, router, usePage } from '@inertiajs/svelte';
   import route from 'ziggy-js';
+  import Swal from 'sweetalert2';
 
   let { todayList, upcoming, past, projects, users }: {
     todayList: any[]; upcoming: any[]; past: any[]; projects: any[]; users: any[];
@@ -62,8 +63,18 @@
     }
   }
 
-  function deleteMeeting(uuid: string) {
-    if (confirm('¿Eliminar esta reunión?')) {
+  async function deleteMeeting(uuid: string) {
+    const result = await Swal.fire({
+      title: '¿Eliminar reunión?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (result.isConfirmed) {
       router.delete(route('meetings.destroy', uuid));
     }
   }
