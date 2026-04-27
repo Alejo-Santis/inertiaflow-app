@@ -3,7 +3,7 @@
   import { Link } from '@inertiajs/svelte';
   import route from 'ziggy-js';
 
-  let { projects }: { projects: any } = $props();
+  let { projects, canCreate = false }: { projects: any; canCreate: boolean } = $props();
 
   const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
     active:    { label: 'Activo',     color: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',  dot: 'bg-emerald-500' },
@@ -42,15 +42,17 @@
         {projects?.total ?? 0} proyecto{(projects?.total ?? 0) !== 1 ? 's' : ''} en total
       </p>
     </div>
-    <Link
-      href={route('projects.create')}
-      class="inline-flex items-center gap-2 self-start rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 hover:shadow-md sm:self-auto"
-    >
-      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-      </svg>
-      Nuevo proyecto
-    </Link>
+    {#if canCreate}
+      <Link
+        href={route('projects.create')}
+        class="inline-flex items-center gap-2 self-start rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 hover:shadow-md sm:self-auto"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Nuevo proyecto
+      </Link>
+    {/if}
   </div>
 
   {#if projects?.data?.length}
@@ -205,16 +207,24 @@
         </svg>
       </div>
       <h3 class="mt-4 text-lg font-semibold text-slate-800">Sin proyectos aún</h3>
-      <p class="mt-2 max-w-xs text-sm text-slate-500">Crea tu primer proyecto y comienza a organizar tu trabajo en equipo.</p>
-      <Link
-        href={route('projects.create')}
-        class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
-      >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Crear primer proyecto
-      </Link>
+      <p class="mt-2 max-w-xs text-sm text-slate-500">
+        {#if canCreate}
+          Crea tu primer proyecto y comienza a organizar tu trabajo en equipo.
+        {:else}
+          Aún no perteneces a ningún proyecto. Contacta a tu administrador para que te invite.
+        {/if}
+      </p>
+      {#if canCreate}
+        <Link
+          href={route('projects.create')}
+          class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Crear primer proyecto
+        </Link>
+      {/if}
     </div>
   {/if}
 

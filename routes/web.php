@@ -50,7 +50,10 @@ Route::middleware('auth')->group(function () {
     Route::get('dashboard',  [DashboardController::class,  'index'])->name('dashboard');
     Route::get('analytics',  [AnalyticsController::class,  'index'])->name('analytics');
     Route::get('workload',   [WorkloadController::class,   'index'])->name('workload');
-    Route::get('my-tasks',   [MyTasksController::class,    'index'])->name('my-tasks');
+    Route::get('my-tasks',                                      [MyTasksController::class, 'index'])->name('my-tasks');
+    Route::post('my-tasks/personal',                            [MyTasksController::class, 'storePersonal'])->name('personal-tasks.store');
+    Route::patch('my-tasks/personal/{task}/status',             [MyTasksController::class, 'updatePersonalStatus'])->name('personal-tasks.updateStatus');
+    Route::delete('my-tasks/personal/{task}',                   [MyTasksController::class, 'destroyPersonal'])->name('personal-tasks.destroy');
     Route::get('search',     [SearchController::class,     'index'])->name('search');
     Route::resource('meetings', MeetingController::class)->only(['index', 'store', 'update', 'destroy']);
 

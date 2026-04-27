@@ -36,7 +36,8 @@ class ProjectController extends Controller
             ->paginate(10);
 
         return Inertia::render('Projects/Index', [
-            'projects' => $projects,
+            'projects'  => $projects,
+            'canCreate' => Gate::allows('create', Project::class),
         ]);
     }
 
@@ -133,7 +134,7 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, Project $project)
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('update', $project);
 
         $data = $request->validated();
 
@@ -145,7 +146,7 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('delete', $project);
 
         $project->delete();
 
