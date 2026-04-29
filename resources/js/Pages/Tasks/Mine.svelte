@@ -91,12 +91,59 @@
     return label;
   }
 
-  // ─── Personal tasks ───────────────────────────────────────────────────────────
+  // ─── Personal tasks — crear ───────────────────────────────────────────────────
   let newTitle    = $state('');
   let newPriority = $state(2);
   let newDueDate  = $state('');
   let newDueTime  = $state('');
   let submitting  = $state(false);
+
+  // ─── Modal de edición ─────────────────────────────────────────────────────────
+  let editTask     = $state<any>(null);   // tarea en edición, null = modal cerrado
+  let editTitle    = $state('');
+  let editPriority = $state(2);
+  let editDueDate  = $state('');
+  let editDueTime  = $state('');
+  let editStatus   = $state('todo');
+  let saving       = $state(false);
+
+  function openEdit(task: any) {
+    editTask     = task;
+    editTitle    = task.title;
+    editPriority = task.priority;
+    editDueDate  = task.due_date  ?? '';
+    editDueTime  = task.due_time  ? task.due_time.slice(0, 5) : '';
+    editStatus   = task.status;
+  }
+
+  function closeEdit() {
+    editTask = null;
+  }
+
+  function focusInput(node: HTMLElement) {
+    node.focus();
+  }
+
+  function saveEdit(e: Event) {
+    e.preventDefault();
+    if (!editTitle.trim() || saving) return;
+    saving = true;
+    router.patch(
+      route('personal-tasks.update', editTask.uuid),
+      {
+        title:    editTitle.trim(),
+        priority: editPriority,
+        due_date: editDueDate || null,
+        due_time: editDueTime || null,
+        status:   editStatus,
+      },
+      {
+        preserveScroll: true,
+        onSuccess: () => closeEdit(),
+        onFinish:  () => { saving = false; },
+      }
+    );
+  }
 
   function createPersonalTask(e: Event) {
     e.preventDefault();
@@ -377,25 +424,36 @@
                 {/each}
               </select>
 
-              <!-- Title -->
-              <p class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{task.title}</p>
+              <!-- Title — click para editar -->
+              <button
+                onclick={() => openEdit(task)}
+                class="min-w-0 flex-1 truncate text-left text-sm font-medium text-slate-800 hover:text-indigo-700 transition-colors"
+              >
+                {task.title}
+              </button>
 
               <!-- Meta -->
-              <div class="flex shrink-0 items-center gap-2">
+              <div class="flex shrink-0 items-center gap-1">
                 <span class="hidden text-xs {pri.color} sm:block">{pri.label}</span>
                 {#if task.due_date}
                   <span class="hidden whitespace-nowrap text-xs {overdue ? 'text-rose-600 font-semibold' : 'text-slate-400'} sm:block">
                     {overdue ? '⚠ ' : ''}{formatDue(task.due_date, task.due_time)}
                   </span>
                 {/if}
-                <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {st.color}">
-                  <span class="h-1.5 w-1.5 rounded-full {st.dot}"></span>
-                  {st.label}
-                </span>
+                <!-- Edit -->
+                <button
+                  onclick={() => openEdit(task)}
+                  class="rounded-lg p-1.5 text-slate-400 transition hover:bg-indigo-50 hover:text-indigo-600"
+                  title="Editar"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
                 <!-- Delete -->
                 <button
                   onclick={() => deletePersonalTask(task)}
-                  class="ml-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                  class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
                   title="Eliminar"
                 >
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -456,3 +514,128 @@
   {/if}
 
 </Layout>
+
+<!-- ═══════════════════ MODAL DE EDICIÓN ═══════════════════ -->
+{#if editTask}
+  <!-- Overlay -->
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+    onclick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
+    onkeydown={(e) => { if (e.key === 'Escape') closeEdit(); }}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-modal-title"
+    tabindex="-1"
+  >
+    <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <h2 id="edit-modal-title" class="text-sm font-semibold text-slate-900">Editar tarea personal</h2>
+        <button
+          onclick={closeEdit}
+          aria-label="Cerrar modal"
+          class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+        >
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit={saveEdit} class="px-6 py-5 space-y-4">
+
+        <!-- Título -->
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-600" for="edit-title">Título</label>
+          <input
+            id="edit-title"
+            type="text"
+            bind:value={editTitle}
+            required
+            use:focusInput
+            class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+          />
+        </div>
+
+        <!-- Estado + Prioridad -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-slate-600" for="edit-status">Estado</label>
+            <select
+              id="edit-status"
+              bind:value={editStatus}
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+            >
+              {#each statusOptions as opt}
+                <option value={opt.value}>{opt.label}</option>
+              {/each}
+            </select>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-slate-600" for="edit-priority">Prioridad</label>
+            <select
+              id="edit-priority"
+              bind:value={editPriority}
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+            >
+              <option value={1}>↓ Baja</option>
+              <option value={2}>→ Media</option>
+              <option value={3}>↑ Alta</option>
+              <option value={4}>⚑ Urgente</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fecha + Hora -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-slate-600" for="edit-date">Fecha límite</label>
+            <input
+              id="edit-date"
+              type="date"
+              bind:value={editDueDate}
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+            />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-slate-600" for="edit-time">Hora</label>
+            <input
+              id="edit-time"
+              type="time"
+              bind:value={editDueTime}
+              disabled={!editDueDate}
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onclick={closeEdit}
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !editTitle.trim()}
+            class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {#if saving}
+              <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            {/if}
+            Guardar cambios
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{/if}

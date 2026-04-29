@@ -77,6 +77,27 @@ class MyTasksController extends Controller
         return back()->with('success', 'Tarea personal creada.');
     }
 
+    public function updatePersonal(Request $request, Task $task)
+    {
+        Gate::authorize('update', $task);
+
+        $validated = $request->validate([
+            'title'    => ['required', 'string', 'max:255'],
+            'priority' => ['integer', 'between:1,4'],
+            'due_date' => ['nullable', 'date'],
+            'due_time' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $task->update([
+            'title'    => $validated['title'],
+            'priority' => $validated['priority'] ?? $task->priority,
+            'due_date' => $validated['due_date'] ?? null,
+            'due_time' => $validated['due_time'] ?? null,
+        ]);
+
+        return back()->with('success', 'Tarea actualizada.');
+    }
+
     public function updatePersonalStatus(Request $request, Task $task)
     {
         Gate::authorize('update', $task);

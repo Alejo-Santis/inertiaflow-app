@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::get('workload',   [WorkloadController::class,   'index'])->name('workload');
     Route::get('my-tasks',                                      [MyTasksController::class, 'index'])->name('my-tasks');
     Route::post('my-tasks/personal',                            [MyTasksController::class, 'storePersonal'])->name('personal-tasks.store');
+    Route::patch('my-tasks/personal/{task}',                    [MyTasksController::class, 'updatePersonal'])->name('personal-tasks.update');
     Route::patch('my-tasks/personal/{task}/status',             [MyTasksController::class, 'updatePersonalStatus'])->name('personal-tasks.updateStatus');
     Route::delete('my-tasks/personal/{task}',                   [MyTasksController::class, 'destroyPersonal'])->name('personal-tasks.destroy');
     Route::get('search',     [SearchController::class,     'index'])->name('search');
