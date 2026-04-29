@@ -42,7 +42,7 @@ class MyTasksController extends Controller
                 WHEN 'cancelled' THEN 5
                 ELSE 6 END")
             ->orderBy('due_date')
-            ->get(['id', 'uuid', 'title', 'status', 'priority', 'due_date']);
+            ->get(['id', 'uuid', 'title', 'status', 'priority', 'due_date', 'due_time']);
 
         return Inertia::render('Tasks/Mine', [
             'projectTasks'  => $projectTasks,
@@ -61,12 +61,14 @@ class MyTasksController extends Controller
             'title'    => ['required', 'string', 'max:255'],
             'priority' => ['integer', 'between:1,4'],
             'due_date' => ['nullable', 'date'],
+            'due_time' => ['nullable', 'date_format:H:i'],
         ]);
 
         Task::create([
             'title'      => $validated['title'],
             'priority'   => $validated['priority'] ?? 2,
             'due_date'   => $validated['due_date'] ?? null,
+            'due_time'   => $validated['due_time'] ?? null,
             'status'     => TaskStatus::Todo->value,
             'created_by' => $request->user()->id,
             'project_id' => null,

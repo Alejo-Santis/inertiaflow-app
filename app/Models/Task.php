@@ -29,6 +29,7 @@ class Task extends Model
         'priority',
         'status',
         'due_date',
+        'due_time',
         'estimated_hours',
         'meeting_url',
     ];

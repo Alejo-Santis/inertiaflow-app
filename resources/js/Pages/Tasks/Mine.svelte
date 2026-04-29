@@ -62,15 +62,40 @@
     { value: 'cancelled',   label: 'Cancelada' },
   ];
 
-  function isOverdue(due: string | null, taskStatus: string) {
+  function localDateStr(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function isOverdue(due: string | null, dueTime: string | null, taskStatus: string): boolean {
     if (!due || taskStatus === 'done' || taskStatus === 'cancelled') return false;
-    return new Date(due) < new Date(new Date().toDateString());
+    const today = localDateStr();
+    if (due < today) return true;                  // fecha pasada → siempre vencida
+    if (due > today) return false;                 // fecha futura → nunca vencida
+    // due === today: vencida solo si la hora ya pasó
+    if (!dueTime) return false;                    // sin hora → no vencida hoy
+    const now     = new Date();
+    const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return dueTime <= nowTime;
+  }
+
+  function formatDue(dateStr: string, timeStr: string | null): string {
+    const today    = localDateStr();
+    const d        = new Date();
+    d.setDate(d.getDate() + 1);
+    const tomorrow = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let label = dateStr === today    ? 'Hoy'
+              : dateStr === tomorrow ? 'Mañana'
+              : new Date(dateStr + 'T00:00:00').toLocaleDateString('es', { day: 'numeric', month: 'short' });
+    if (timeStr) label += ` ${timeStr.slice(0, 5)}`;
+    return label;
   }
 
   // ─── Personal tasks ───────────────────────────────────────────────────────────
   let newTitle    = $state('');
   let newPriority = $state(2);
   let newDueDate  = $state('');
+  let newDueTime  = $state('');
   let submitting  = $state(false);
 
   function createPersonalTask(e: Event) {
@@ -79,7 +104,12 @@
     submitting = true;
     router.post(
       route('personal-tasks.store'),
-      { title: newTitle.trim(), priority: newPriority, due_date: newDueDate || null },
+      {
+        title:    newTitle.trim(),
+        priority: newPriority,
+        due_date: newDueDate || null,
+        due_time: newDueTime || null,
+      },
       {
         preserveScroll: true,
         onFinish: () => {
@@ -87,6 +117,7 @@
           newTitle    = '';
           newPriority = 2;
           newDueDate  = '';
+          newDueTime  = '';
         },
       }
     );
@@ -199,7 +230,7 @@
         {#each projectTasks.data as task}
           {@const st    = statusConfig[task.status] ?? { label: task.status, color: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200', dot: 'bg-slate-400' }}
           {@const pri   = priorityConfig[task.priority] ?? { label: String(task.priority), color: 'text-slate-500' }}
-          {@const overdue = isOverdue(task.due_date, task.status)}
+          {@const overdue = isOverdue(task.due_date, null, task.status)}
           <Link
             href={route('projects.tasks.show', [task.project?.uuid, task.uuid])}
             class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 group"
@@ -230,7 +261,7 @@
               </span>
               {#if task.due_date}
                 <span class="hidden whitespace-nowrap text-xs {overdue ? 'text-rose-600 font-semibold' : 'text-slate-500'} sm:block">
-                  {overdue ? '⚠ ' : ''}{task.due_date}
+                  {overdue ? '⚠ ' : ''}{formatDue(task.due_date, null)}
                 </span>
               {/if}
             </div>
@@ -270,7 +301,7 @@
               required
             />
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <select
               bind:value={newPriority}
               class="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
@@ -284,6 +315,13 @@
               type="date"
               bind:value={newDueDate}
               class="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+            />
+            <input
+              type="time"
+              bind:value={newDueTime}
+              disabled={!newDueDate}
+              title={!newDueDate ? 'Selecciona primero una fecha' : 'Hora de vencimiento'}
+              class="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
@@ -326,7 +364,7 @@
           {#each activeTasks as task}
             {@const st      = statusConfig[task.status] ?? { label: task.status, color: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200', dot: 'bg-slate-400' }}
             {@const pri     = priorityConfig[task.priority] ?? { label: String(task.priority), color: 'text-slate-500' }}
-            {@const overdue = isOverdue(task.due_date, task.status)}
+            {@const overdue = isOverdue(task.due_date, task.due_time, task.status)}
             <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
               <!-- Status toggle -->
               <select
@@ -347,7 +385,7 @@
                 <span class="hidden text-xs {pri.color} sm:block">{pri.label}</span>
                 {#if task.due_date}
                   <span class="hidden whitespace-nowrap text-xs {overdue ? 'text-rose-600 font-semibold' : 'text-slate-400'} sm:block">
-                    {overdue ? '⚠ ' : ''}{task.due_date}
+                    {overdue ? '⚠ ' : ''}{formatDue(task.due_date, task.due_time)}
                   </span>
                 {/if}
                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {st.color}">
@@ -382,7 +420,6 @@
           <div class="mt-2 space-y-2">
             {#each doneTasks as task}
               {@const st  = statusConfig[task.status] ?? { label: task.status, color: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200', dot: 'bg-slate-300' }}
-              {@const pri = priorityConfig[task.priority] ?? { label: String(task.priority), color: 'text-slate-400' }}
               <div class="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 opacity-70">
                 <select
                   value={task.status}
