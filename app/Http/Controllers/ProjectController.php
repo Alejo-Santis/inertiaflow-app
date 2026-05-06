@@ -35,6 +35,11 @@ class ProjectController extends Controller
             ->latest()
             ->paginate(10);
 
+        $projects->getCollection()->transform(function ($project) {
+            $project->setAttribute('can_delete', Gate::allows('delete', $project));
+            return $project;
+        });
+
         return Inertia::render('Projects/Index', [
             'projects'  => $projects,
             'canCreate' => Gate::allows('create', Project::class),
@@ -61,6 +66,7 @@ class ProjectController extends Controller
             'members'          => $members,
             'available'        => $available,
             'canManageMembers' => Gate::allows('update', $project),
+            'canDelete'        => Gate::allows('delete', $project),
         ]);
     }
 

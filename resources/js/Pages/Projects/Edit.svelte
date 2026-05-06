@@ -18,8 +18,15 @@
     department_id:   project.department_id   ?? '' as string | number,
   });
 
-  let selectedOrg = $derived(organizations.find(o => o.id === Number($form.organization_id)) ?? null);
-  $effect(() => { if ($form.organization_id === '') $form.department_id = ''; });
+  let selectedOrg = $derived(
+    $form.organization_id !== '' && $form.organization_id !== null
+      ? (organizations.find(o => o.id === Number($form.organization_id)) ?? null)
+      : null
+  );
+
+  function handleOrgChange() {
+    $form.department_id = '';
+  }
 
   const statusOptions = [
     { value: 'active',    label: 'Activo' },
@@ -203,6 +210,7 @@
               <select
                 id="edit_organization_id"
                 bind:value={$form.organization_id}
+                onchange={handleOrgChange}
                 class="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
               >
                 <option value="">Sin organización</option>
